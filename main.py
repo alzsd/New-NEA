@@ -52,7 +52,9 @@ class Player(pygame.sprite.Sprite):
         self.direction = "right"  # Initial direction of sprite
         self.max_health = max_health
         self.health = self.max_health
-        self._equipped_weapon = "sword"
+        
+        # Equipment
+        self.equipped_weapon = "sword"
         
         # Defining the path to the assets folder
         assets_path = os.path.join(os.path.dirname(__file__), "Assets")
@@ -61,12 +63,12 @@ class Player(pygame.sprite.Sprite):
         run_sheet_path = os.path.join(assets_path, "Link_runs.PNG")
         idle_sheet_path = os.path.join(assets_path, "Link_idle6.PNG")
         jump_sheet_path = os.path.join(assets_path, "Link_jump.PNG")
-        attack_sheet_path = os.path.join(assets_path, "Link_attack.PNG")
+        sword_attack_sheet_path = os.path.join(assets_path, "Link_sword_attack.PNG")
 
         self.run_sheet = pygame.image.load(run_sheet_path).convert_alpha()
         self.idle_sheet = pygame.image.load(idle_sheet_path).convert_alpha()
         self.jump_sheet = pygame.image.load(jump_sheet_path).convert_alpha()
-        self.attack_sheet = pygame.image.load(attack_sheet_path).convert_alpha()
+        self.sword_attack_sheet = pygame.image.load(sword_attack_sheet_path).convert_alpha()
 
         # Initialize the rect attribute before calling load_frames
         self.rect = pygame.Rect(0, 0, 0, 0)
@@ -75,7 +77,7 @@ class Player(pygame.sprite.Sprite):
         self.run_frames = self.load_frames(self.run_sheet, num_columns=10)
         self.idle_frames = self.load_frames(self.idle_sheet, num_columns=1)
         self.jump_frames = self.load_frames(self.jump_sheet, num_columns=1)
-        self.attack_frames = self.load_frames(self.attack_sheet, num_columns=6)
+        self.sword_attack_frames = self.load_frames(self.sword_attack_sheet, num_columns=9)
 
         # Initial player state
         self.current_frames = self.idle_frames
@@ -87,6 +89,7 @@ class Player(pygame.sprite.Sprite):
         self.x_vel = 0
         self.y_vel = 0
         self.is_jumping = False
+        self.is_attacking = False  # Track attack state
         self.jump_strength = 15
         self.gravity = 1
         self.frame_count = 0
@@ -115,7 +118,9 @@ class Player(pygame.sprite.Sprite):
         self.y_vel += self.gravity
 
         # Choose the correct set of frames based on state
-        if self.is_jumping:
+        if self.is_attacking:
+            self.current_frames = self.sword_attack_frames
+        elif self.is_jumping:
             self.current_frames = self.jump_frames
         elif self.x_vel != 0:
             self.current_frames = self.run_frames
@@ -132,6 +137,10 @@ class Player(pygame.sprite.Sprite):
             # Flipping the image based on direction
             if self.direction == "left":
                 self.image = pygame.transform.flip(self.image, True, False)
+
+            # Reset attack state when animation completes
+            if self.is_attacking and self.current_frame_index == len(self.sword_attack_frames) - 1:
+                self.is_attacking = False
 
         # Collision detection for borders
         if self.rect.left < 0:
@@ -168,6 +177,18 @@ class Player(pygame.sprite.Sprite):
 
     def stop(self):
         self.x_vel = 0
+    
+    def attack(self, enemies):
+        if self.equipped_weapon == "sword" and not self.is_attacking:  # Ensure sword is equipped
+            self.is_attacking = True
+            self.current_frames = self.sword_attack_frames
+            self.current_frame_index = 0
+            self.frame_count = 0
+
+            # Check for collisions with enemies
+            for enemy in enemies:
+                if self.rect.colliderect(enemy.rect):
+                    enemy.take_damage(25)  # Adjust damage as needed
 
     def take_damage(self, amount):
         self.health -= amount
@@ -200,18 +221,27 @@ class Player(pygame.sprite.Sprite):
         screen.blit(health_text, (10, 35))  # Position below the health bar
 
 # Handle input function
-def handle_input(player):
+def handle_input(player, enemies):
     keys = pygame.key.get_pressed()
     player.x_vel = 0
     if keys[pygame.K_LEFT] or keys[pygame.K_a]:
-        player.move_left(speed)
+        player.move_left(3)  # Adjust speed as needed
     elif keys[pygame.K_RIGHT] or keys[pygame.K_d]:
-        player.move_right(speed)
+        player.move_right(3)  # Adjust speed as needed
     else:
         player.stop()
 
     if keys[pygame.K_SPACE] or keys[pygame.K_UP]:
         player.jump()
+    
+    # Handle mouse input for attack
+    mouse_buttons = pygame.mouse.get_pressed()
+    if mouse_buttons[0] and player.equipped_weapon == "sword":  # Left mouse button for sword attack
+        player.attack(enemies)
+    
+    # Handle weapon switching
+    if keys[pygame.K_1]:
+        player.equipped_weapon = "sword"
 
 # Start level function
 def start_level(level_name, screen, difficulty):
