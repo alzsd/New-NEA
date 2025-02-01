@@ -175,20 +175,20 @@ class Player(pygame.sprite.Sprite):
             self.y_vel = -self.jump_strength
             self.is_jumping = True
 
-    def stop(self):
+    def stop(self, enemies):
         self.x_vel = 0
     
-    def attack(self, enemies):
+    def attack(self):
         if self.equipped_weapon == "sword" and not self.is_attacking:  # Ensure sword is equipped
             self.is_attacking = True
             self.current_frames = self.sword_attack_frames
             self.current_frame_index = 0
             self.frame_count = 0
 
-            # Check for collisions with enemies
+            """# Check for collisions with enemies
             for enemy in enemies:
                 if self.rect.colliderect(enemy.rect):
-                    enemy.take_damage(25)  # Adjust damage as needed
+                    enemy.take_damage(25)  # Adjust damage as needed"""
 
     def take_damage(self, amount):
         self.health -= amount
@@ -221,7 +221,7 @@ class Player(pygame.sprite.Sprite):
         screen.blit(health_text, (10, 35))  # Position below the health bar
 
 # Handle input function
-def handle_input(player, enemies):
+def handle_input(player):
     keys = pygame.key.get_pressed()
     player.x_vel = 0
     if keys[pygame.K_LEFT] or keys[pygame.K_a]:
@@ -237,7 +237,7 @@ def handle_input(player, enemies):
     # Handle mouse input for attack
     mouse_buttons = pygame.mouse.get_pressed()
     if mouse_buttons[0] and player.equipped_weapon == "sword":  # Left mouse button for sword attack
-        player.attack(enemies)
+        player.attack()
     
     # Handle weapon switching
     if keys[pygame.K_1]:
