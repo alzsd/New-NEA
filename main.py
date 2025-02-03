@@ -4,6 +4,7 @@ import os
 from Modules import Player
 from Modules import Platform
 from Modules import Level
+from Modules import Arrow
 
 # Global variables
 speed = 3
@@ -29,6 +30,10 @@ def handle_input(player):
     if keys[pygame.K_SPACE] or keys[pygame.K_UP]:
         player.jump()
 
+    mouse_buttons = pygame.mouse.get_pressed()
+    if mouse_buttons[0]:  # Left mouse button is pressed
+        if player.equipped_weapon == "bow":
+            player.shoot_arrow()
 # Start level function
 def start_level(level_name, screen, difficulty):
     start_pos = start_positions[level_name]

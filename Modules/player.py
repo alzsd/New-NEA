@@ -1,6 +1,6 @@
 import pygame
 import os
-
+from arrow import Arrow
 
 # Player class
 class Player(pygame.sprite.Sprite):
@@ -10,7 +10,9 @@ class Player(pygame.sprite.Sprite):
         self.direction = "right"  # Initial direction of sprite
         self.max_health = max_health
         self.health = self.max_health
-        self._equipped_weapon = "sword"
+        self._equipped_weapon = "bow"
+        
+        self.is_attacking = False
         
         # Defining the path to the assets folder
         assets_path = os.path.join(os.path.dirname(__file__), "Assets")
@@ -19,12 +21,12 @@ class Player(pygame.sprite.Sprite):
         run_sheet_path = os.path.join(assets_path, "Link_runs.PNG")
         idle_sheet_path = os.path.join(assets_path, "Link_idle6.PNG")
         jump_sheet_path = os.path.join(assets_path, "Link_jump.PNG")
-        attack_sheet_path = os.path.join(assets_path, "Link_attack.PNG")
+        bow_sheet_path = os.path.join(assets_path, "Link_attack.png")
 
         self.run_sheet = pygame.image.load(run_sheet_path).convert_alpha()
         self.idle_sheet = pygame.image.load(idle_sheet_path).convert_alpha()
         self.jump_sheet = pygame.image.load(jump_sheet_path).convert_alpha()
-        self.attack_sheet = pygame.image.load(attack_sheet_path).convert_alpha()
+        self.bow_sheet = pygame.image.load(bow_sheet_path).convert_alpha()
 
         # Initialize the rect attribute before calling load_frames
         self.rect = pygame.Rect(0, 0, 0, 0)
@@ -33,7 +35,7 @@ class Player(pygame.sprite.Sprite):
         self.run_frames = self.load_frames(self.run_sheet, num_columns=10)
         self.idle_frames = self.load_frames(self.idle_sheet, num_columns=1)
         self.jump_frames = self.load_frames(self.jump_sheet, num_columns=1)
-        self.attack_frames = self.load_frames(self.attack_sheet, num_columns=6)
+        self.bow_frames = self.load_frames(self.bow_sheet, num_columns=1)
 
         # Initial player state
         self.current_frames = self.idle_frames
@@ -48,6 +50,9 @@ class Player(pygame.sprite.Sprite):
         self.jump_strength = 15
         self.gravity = 1
         self.frame_count = 0
+
+        #arrow group
+        self.arrows = pygame.sprite.Group()
 
     def load_frames(self, sprite_sheet, num_columns):
         frames = []
@@ -67,13 +72,28 @@ class Player(pygame.sprite.Sprite):
 
         return frames
 
+    def attack(self):
+        if self.equipped_weapon == "bow" and not self.is_attacking:
+            self.is_attacking = True  # Set to True when attack starts
+            self.current_frames = self.bow_frames
+
+    def shoot_arrow(self):
+        if self.equipped_weapon == "bow":
+            direction = self.direction
+            arrow = Arrow(self.rect.centerx, self.rect.centery, direction)
+            self.arrows.add(arrow)
+
+
+
     def update(self):
         self.rect.x += self.x_vel
         self.rect.y += self.y_vel
         self.y_vel += self.gravity
 
         # Choose the correct set of frames based on state
-        if self.is_jumping:
+        if self.is_attacking and self._equipped_weapon == "bow":
+            self.current_frames = self.bow_frames
+        elif self.is_jumping:
             self.current_frames = self.jump_frames
         elif self.x_vel != 0:
             self.current_frames = self.run_frames
