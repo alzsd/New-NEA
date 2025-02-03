@@ -35,7 +35,7 @@ class Player(pygame.sprite.Sprite):
         self.direction = "right"  # Initial direction of sprite
         self.max_health = max_health
         self.health = self.max_health
-        self._equipped_weapon = "bow"
+        self.equipped_weapon = "bow"
         
         self.is_attacking = False
         
@@ -98,7 +98,7 @@ class Player(pygame.sprite.Sprite):
         return frames
 
     def attack(self):
-        if self.equipped_weapon == "bow" and not self.is_attacking:
+        if self.equipped_weapon == "bow": #and not self.is_attacking
             self.is_attacking = True  # Set to True when attack starts
             self.current_frames = self.bow_frames
 
@@ -116,13 +116,17 @@ class Player(pygame.sprite.Sprite):
         self.y_vel += self.gravity
 
         # Choose the correct set of frames based on state
-        if self.is_attacking and self._equipped_weapon == "bow":
+        if self.is_attacking and self.equipped_weapon == "bow":
             self.current_frames = self.bow_frames
+            self.direction = "left" if self.x_vel < 0 else "right"
+            
         elif self.is_jumping:
             self.current_frames = self.jump_frames
+            
         elif self.x_vel != 0:
             self.current_frames = self.run_frames
             self.direction = "left" if self.x_vel < 0 else "right"
+            
         else:
             self.current_frames = self.idle_frames
 

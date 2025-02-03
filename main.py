@@ -30,9 +30,12 @@ def handle_input(player):
 
     if keys[pygame.K_SPACE] or keys[pygame.K_UP]:
         player.jump()
+    
+    if keys[pygame.K_2]:
+        player.equipped_weapon = "bow"
 
     mouse_buttons = pygame.mouse.get_pressed()
-    if mouse_buttons[0]:  # Left mouse button is pressed
+    if mouse_buttons[1]:  # Left mouse button is pressed
         if player.equipped_weapon == "bow":
             player.shoot_arrow()
 # Start level function
@@ -43,7 +46,7 @@ def start_level(level_name, screen, difficulty):
     if difficulty == "easy":
         max_health = 150
     elif difficulty == "medium":
-        max_health = 100
+        max_health = 125
     else:  # hard
         max_health = 75
     
@@ -85,12 +88,15 @@ def main():
                 running = False
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 running = False
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                # I will use this to debug my current issue -- !resolved!
+                print(f"Mouse button {event.button} pressed at {event.pos}")
 
         handle_input(player)
         character_sprites.update()
         test_level.check_collisions(player)
 
-        screen.fill((0, 0, 0))
+        screen.fill((50, 50, 100))
         test_level.draw(screen)  # Draw the test level platforms
         character_sprites.draw(screen)
         
