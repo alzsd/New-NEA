@@ -5,6 +5,7 @@ from Modules import Player
 from Modules import Platform
 from Modules import Level
 from Modules import Arrow
+#from Modules import Arrow
 
 # Global variables
 speed = 3

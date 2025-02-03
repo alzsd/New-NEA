@@ -1,4 +1,4 @@
-import pygame
+"""import pygame
 import os
 import math
 
@@ -25,4 +25,4 @@ class Arrow(pygame.sprite.Sprite):
         #rotating the image based on its resultant velocity
         angle = math.degrees(math.atan2(-self.y_vel, self.x_vel))
         self.image = pygame.transform.rotate(self.original_image, angle)
-        self.rect = self.image.get_rect(center = self.rect.center)
+        self.rect = self.image.get_rect(center = self.rect.center)"""
