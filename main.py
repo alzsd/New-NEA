@@ -25,19 +25,26 @@ def handle_input(player):
         player.move_left(speed)
     elif keys[pygame.K_RIGHT] or keys[pygame.K_d]:
         player.move_right(speed)
+    
+
+    elif keys[pygame.K_SPACE] or keys[pygame.K_UP]:
+        player.jump()
+    
+    elif keys[pygame.K_2]:
+        player.equipped_weapon = "bow"
+        
     else:
         player.stop()
 
-    if keys[pygame.K_SPACE] or keys[pygame.K_UP]:
-        player.jump()
-    
-    if keys[pygame.K_2]:
-        player.equipped_weapon = "bow"
-
     mouse_buttons = pygame.mouse.get_pressed()
-    if mouse_buttons[1]:  # Left mouse button is pressed
+    if mouse_buttons[0] and not player.shooting:  # Left mouse button is pressed
+        player.shooting = True
+    elif not mouse_buttons[0] and player.shooting:
+        print(f"Mouse button released. Equipped weapon: {player.equipped_weapon}")  # Debugging assistance
         if player.equipped_weapon == "bow":
             player.shoot_arrow()
+        player.shooting = False
+        
 # Start level function
 def start_level(level_name, screen, difficulty):
     start_pos = start_positions[level_name]
@@ -54,13 +61,13 @@ def start_level(level_name, screen, difficulty):
     return player
 
 
-# Main initialiser
+# Main initializer
 def main():
     pygame.init()
     screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)  # Fullscreen mode
     clock = pygame.time.Clock()
 
-    #set the difficulty level
+    # Set the difficulty level
     difficulty = "medium"
     
     # Create the test level
@@ -94,12 +101,17 @@ def main():
 
         handle_input(player)
         character_sprites.update()
+        player.update(test_level.platforms)  # Ensure platforms group is passed
         test_level.check_collisions(player)
 
         screen.fill((50, 50, 100))
         test_level.draw(screen)  # Draw the test level platforms
         character_sprites.draw(screen)
-        
+
+        # Update arrows with platform collisions
+        player.arrows.update(test_level.platforms)  # Ensure platforms group is passed
+
+        player.arrows.draw(screen)
         player.draw_health_bar(screen)
         player.draw_health_text(screen)
         
