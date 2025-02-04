@@ -4,7 +4,7 @@ import math
 
 #arrow class
 class Arrow(pygame.sprite.Sprite):
-    def __init__(self, x, y, direction, platforms):
+    def __init__(self, x, y, direction):
         super().__init__()
         assets_path = os.path.join(os.path.dirname(__file__), "Assets")
         arrow_path = os.path.join(assets_path, "Arrow_4.png")
@@ -18,7 +18,7 @@ class Arrow(pygame.sprite.Sprite):
         self.y_vel = -10 #initial velocity acting upwards
         self.gravity = 0.7
         
-    def update(self,platforms):
+    def update(self):
         self.y_vel += self.gravity #simulates gravitational acceleration
         self.rect.x += self.x_vel
         self.rect.y += self.y_vel #changes the next position of the rect
@@ -27,15 +27,8 @@ class Arrow(pygame.sprite.Sprite):
         angle = math.degrees(math.atan2(-self.y_vel, self.x_vel))
         self.image = pygame.transform.rotate(self.original_image, angle)
         self.rect = self.image.get_rect(center = self.rect.center)
-        
-        #check for collisions with platforms
-        collisions = pygame.sprite.spritecollide(self, platforms, False)
-        if collisions:
-            self.x_vel = 0
-            self.y_vel = 0
-            self.gravity = 0
-            self.rect.y = collisions[0].rect.top - self.rect.height // 2 
 
+# Player class
 class Player(pygame.sprite.Sprite):
     def __init__(self, start_pos, screen, max_health):
         super().__init__()
@@ -47,10 +40,10 @@ class Player(pygame.sprite.Sprite):
         
         self.is_attacking = False
         
-        # Bow cooldown attributes
+        #bow cooldown attributes:
         self.shooting_cooldown = 1.0
         self.last_shot_time = 0.0
-        self.shooting = False  # This merely tracks the shooting state!
+        self.shooting = False # This merely tracks the shooting state!
         
         # Defining the path to the assets folder
         assets_path = os.path.join(os.path.dirname(__file__), "Assets")
@@ -89,7 +82,7 @@ class Player(pygame.sprite.Sprite):
         self.gravity = 1
         self.frame_count = 0
 
-        # Arrow group
+        #arrow group
         self.arrows = pygame.sprite.Group()
 
     def load_frames(self, sprite_sheet, num_columns):
@@ -122,12 +115,14 @@ class Player(pygame.sprite.Sprite):
             arrow = Arrow(self.rect.centerx, self.rect.centery, direction)
             self.arrows.add(arrow)
 
-    def update(self, platforms):
+
+
+    def update(self):
         self.rect.x += self.x_vel
         self.rect.y += self.y_vel
         self.y_vel += self.gravity
         
-        self.arrows.update(platforms)
+        self.arrows.update()
 
         # Choose the correct set of frames based on state
         if self.is_attacking and self.equipped_weapon == "bow":
