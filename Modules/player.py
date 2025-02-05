@@ -16,7 +16,9 @@ class Arrow(pygame.sprite.Sprite):
         self.direction = direction
         self.x_vel = 10 if direction == "right" else -10
         self.y_vel = -10 #initial velocity acting upwards
-        self.gravity = 0.7
+        self.gravity = 0.2
+        
+        self.timer = 0  # Initialise a timer to track arrow lifespan
         
     def update(self):
         self.y_vel += self.gravity #simulates gravitational acceleration
@@ -27,6 +29,12 @@ class Arrow(pygame.sprite.Sprite):
         angle = math.degrees(math.atan2(-self.y_vel, self.x_vel))
         self.image = pygame.transform.rotate(self.original_image, angle)
         self.rect = self.image.get_rect(center = self.rect.center)
+        
+        self.timer += 1/120 # assuming my game will run at 120 fps
+        
+        if self.timer > 0.5: #setting a time limit
+            print(f"Arrow killed - lifespan exceeded {self.timer}")
+            self.kill() #removes the arrow from the existing sprite group
 
 # Player class
 class Player(pygame.sprite.Sprite):
