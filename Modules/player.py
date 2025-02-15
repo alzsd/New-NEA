@@ -49,6 +49,8 @@ class Player(pygame.sprite.Sprite):
         #keep track of arrow shooting spritesheet:
         self.shooting_timer = 0.0
         self.shooting_duration = 0.4
+        self.damage_cooldown = 0 #cooldown time tracker
+        self.damage_cooldown_duration = 5*120 #sets cooldown time
                 
         #bow cooldown attributes:
         self.shooting_cooldown = 1.0
@@ -132,6 +134,10 @@ class Player(pygame.sprite.Sprite):
         self.rect.y += self.y_vel
         self.y_vel += self.gravity
         
+        #Decrementing the damage cooldown timer
+        if self.damage_cooldown > 0:
+            self.damage_cooldown -= 1
+        
         self.arrows.update()
         
         if self.shooting:
@@ -201,10 +207,13 @@ class Player(pygame.sprite.Sprite):
         self.x_vel = 0
 
     def take_damage(self, amount):
-        self.health -= amount
-        if self.health <= 0:
-            self.health = 0
-            self.die()
+        if self.damage_cooldown == 0:  # Check if cooldown is zero
+            print(f"Taking damage -{amount}") #debug line
+            self.health -= amount
+            self.damage_cooldown = self.damage_cooldown_duration  # Reset cooldown
+            if self.health <= 0:
+                self.health = 0
+                self.die()
 
     def heal(self, amount):
         self.health += amount
