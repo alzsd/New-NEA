@@ -129,6 +129,10 @@ def main():
         player.arrows.draw(screen)
         player.draw_health_bar(screen)
         player.draw_health_text(screen)
+        
+        # Draw health bars for enemies
+        for enemy in enemies:
+            enemy.draw_health_bar(screen)
 
         pygame.display.flip()
         clock.tick(120)

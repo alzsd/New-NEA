@@ -9,6 +9,7 @@ class Enemy(pygame.sprite.Sprite):
         self.rect.x = x
         self.rect.y = y
         self.health = 100
+        self.max_health = 100
         self.x_vel = 0  # Enemy movement speed
         self.y_vel = 0
         self.gravity = 1
@@ -37,4 +38,14 @@ class Enemy(pygame.sprite.Sprite):
     def take_damage(self, amount):
         self.health -= amount
         if self.health <= 0:
+            self.health = 0
             self.kill()
+            
+    def draw_health_bar(self, surface):
+        bar_width = 50
+        bar_height = 5
+        health_bar_length = bar_width * (self.health / self.max_health)
+        
+        pygame.draw.rect(surface, (255, 0, 0), (self.rect.x, self.rect.y - 10, bar_width, bar_height))
+        pygame.draw.rect(surface, (0, 255, 0), (self.rect.x, self.rect.y - 10, health_bar_length, bar_height))
+        
