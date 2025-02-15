@@ -22,7 +22,8 @@ start_positions = {
 def handle_input(player):
     keys = pygame.key.get_pressed()
     mouse_buttons = pygame.mouse.get_pressed()
-
+    mouse_pos = pygame.mouse.get_pos()  # Get the current mouse position    
+    
     # Disable movement if the player is shooting
     if player.shooting:
         player.stop()  # Ensure the player stops moving when shooting
@@ -38,6 +39,10 @@ def handle_input(player):
             player.equipped_weapon = "bow"
         else:
             player.stop()
+
+    # Call aim_bow to update the aim_angle only if LMB is held down
+    if mouse_buttons[0]:
+        player.aim_bow(mouse_pos)
 
     # Handle shooting state
     if mouse_buttons[0] and player.equipped_weapon == "bow":

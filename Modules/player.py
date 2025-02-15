@@ -4,7 +4,7 @@ import math
 
 #arrow class
 class Arrow(pygame.sprite.Sprite):
-    def __init__(self, x, y, direction):
+    def __init__(self, x, y, direction, aim_angle):
         super().__init__()
         assets_path = os.path.join(os.path.dirname(__file__), "Assets")
         arrow_path = os.path.join(assets_path, "Arrow_4.png")
@@ -13,9 +13,12 @@ class Arrow(pygame.sprite.Sprite):
         
         self.original_image = self.image #keeps track of original direction of the arrow
         self.rect = self.image.get_rect(center = (x, y))
+        self.aim_angle = aim_angle
+        self.speed = 20
+        
         self.direction = direction
-        self.x_vel = 10 if direction == "right" else -10
-        self.y_vel = -10 #initial velocity acting upwards
+        self.x_vel = self.speed * math.cos(self.aim_angle)
+        self.y_vel = self.speed * math.sin(self.aim_angle) #initial velocity acting upwards
         self.gravity = 0.2
         
         self.timer = 0  # Initialise a timer to track arrow lifespan
@@ -124,7 +127,7 @@ class Player(pygame.sprite.Sprite):
         if self.equipped_weapon == "bow":
             print("shooting arrow - !Debug!")
             direction = self.direction
-            arrow = Arrow(self.rect.centerx, self.rect.centery, direction)
+            arrow = Arrow(self.rect.centerx, self.rect.centery, direction, self.aim_angle)
             self.arrows.add(arrow)
 
 
@@ -238,6 +241,13 @@ class Player(pygame.sprite.Sprite):
         font = pygame.font.SysFont(None, 24)
         health_text = font.render(f'{self.health} / {self.max_health}', True, (255, 255, 255))
         screen.blit(health_text, (10, 35))  # Position below the health bar
+        
+        
+    def aim_bow(self, mouse_pos):
+        dx = mouse_pos[0] - self.rect.centerx
+        dy = mouse_pos[1] - self.rect.centery
+        self.aim_angle = math.atan2(dy, dx)
+        
         
     def die(self):
         print("player has died!")
