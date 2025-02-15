@@ -26,3 +26,7 @@ class Arrow(pygame.sprite.Sprite):
         angle = math.degrees(math.atan2(-self.y_vel, self.x_vel))
         self.image = pygame.transform.rotate(self.original_image, angle)
         self.rect = self.image.get_rect(center = self.rect.center)"""
+"""   background = pygame.image.load('Modules\Assets\Background_overworld.jpg')
+        
+        # Blit the background image onto the screen
+        screen.blit(background, (0, 0))"""

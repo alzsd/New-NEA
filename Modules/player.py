@@ -46,8 +46,10 @@ class Player(pygame.sprite.Sprite):
         self.health = self.max_health
         self.equipped_weapon = "bow"
         
-        self.is_attacking = False
-        
+        #keep track of arrow shooting spritesheet:
+        self.shooting_timer = 0.0
+        self.shooting_duration = 0.4
+                
         #bow cooldown attributes:
         self.shooting_cooldown = 1.0
         self.last_shot_time = 0.0
@@ -60,7 +62,7 @@ class Player(pygame.sprite.Sprite):
         run_sheet_path = os.path.join(assets_path, "Link_runs.PNG")
         idle_sheet_path = os.path.join(assets_path, "Link_idle6.PNG")
         jump_sheet_path = os.path.join(assets_path, "Link_jump.PNG")
-        bow_sheet_path = os.path.join(assets_path, "Link_attack.png")
+        bow_sheet_path = os.path.join(assets_path, "Link_bow_attack.png")
 
         self.run_sheet = pygame.image.load(run_sheet_path).convert_alpha()
         self.idle_sheet = pygame.image.load(idle_sheet_path).convert_alpha()
@@ -112,8 +114,8 @@ class Player(pygame.sprite.Sprite):
         return frames
 
     def attack(self):
-        if self.equipped_weapon == "bow": #and not self.is_attacking
-            self.is_attacking = True  # Set to True when attack starts
+        if self.equipped_weapon == "bow": #and not self.shooting
+            self.shooting = True  # Set to True when attack starts
             self.current_frames = self.bow_frames
 
     def shoot_arrow(self):
@@ -131,9 +133,14 @@ class Player(pygame.sprite.Sprite):
         self.y_vel += self.gravity
         
         self.arrows.update()
+        
+        if self.shooting:
+            self.shooting_timer -= 1 / 120  # Assuming 120 FPS
+            if self.shooting_timer <= 0:
+                self.shooting = False
 
         # Choose the correct set of frames based on state
-        if self.is_attacking and self.equipped_weapon == "bow":
+        if self.shooting and self.equipped_weapon == "bow":
             self.current_frames = self.bow_frames
             self.direction = "left" if self.x_vel < 0 else "right"
             

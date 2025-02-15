@@ -20,27 +20,31 @@ start_positions = {
 # Handle input function
 def handle_input(player):
     keys = pygame.key.get_pressed()
-    player.x_vel = 0
-    if keys[pygame.K_LEFT] or keys[pygame.K_a]:
-        player.move_left(speed)
-    elif keys[pygame.K_RIGHT] or keys[pygame.K_d]:
-        player.move_right(speed)
-    
-
-    elif keys[pygame.K_SPACE] or keys[pygame.K_UP]:
-        player.jump()
-    
-    elif keys[pygame.K_2]:
-        player.equipped_weapon = "bow"
-        
-    else:
-        player.stop()
-
     mouse_buttons = pygame.mouse.get_pressed()
-    if mouse_buttons[0] and not player.shooting:
-        player.shooting = True
+
+    # Disable movement if the player is shooting
+    if player.shooting:
+        player.stop()  # Ensure the player stops moving when shooting
+    else:
+        player.x_vel = 0
+        if keys[pygame.K_LEFT] or keys[pygame.K_a]:
+            player.move_left(speed)
+        elif keys[pygame.K_RIGHT] or keys[pygame.K_d]:
+            player.move_right(speed)
+        elif keys[pygame.K_SPACE] or keys[pygame.K_UP]:
+            player.jump()
+        elif keys[pygame.K_2]:
+            player.equipped_weapon = "bow"
+        else:
+            player.stop()
+
+    # Handle shooting state
+    if mouse_buttons[0] and player.equipped_weapon == "bow":
+        if not player.shooting:
+            player.shooting = True
+            player.shooting_timer = player.shooting_duration  # Start the timer
     elif not mouse_buttons[0] and player.shooting:
-        print(f"Mouse button released. Equipped weapon: {player.equipped_weapon}") #debug line
+        print(f"Mouse button released. Equipped weapon: {player.equipped_weapon}")  # Debug line
         if player.equipped_weapon == "bow":
             player.shoot_arrow()
         player.shooting = False
@@ -100,6 +104,8 @@ def main():
                 # I will use this to debug my current issue -- !resolved!
                 print(f"Mouse button {event.button} pressed at {event.pos}")
 
+        
+        
         handle_input(player)
         character_sprites.update()
         test_level.check_collisions(player)
