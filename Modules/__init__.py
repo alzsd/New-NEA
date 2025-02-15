@@ -8,3 +8,4 @@ from .player import Arrow
 from .level import Level
 from .platform_1 import Platform
 #from .arrow import Arrow
+from .enemy import Enemy

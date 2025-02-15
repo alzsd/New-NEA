@@ -229,3 +229,7 @@ class Player(pygame.sprite.Sprite):
         font = pygame.font.SysFont(None, 24)
         health_text = font.render(f'{self.health} / {self.max_health}', True, (255, 255, 255))
         screen.blit(health_text, (10, 35))  # Position below the health bar
+        
+    def die(self):
+        print("player has died!")
+        #more here later on

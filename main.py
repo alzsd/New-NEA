@@ -5,6 +5,7 @@ from Modules import Player
 from Modules import Platform
 from Modules import Level
 from Modules import Arrow
+from Modules import Enemy
 #from Modules import Arrow
 
 # Global variables
@@ -72,9 +73,9 @@ def main():
     screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)  # Fullscreen mode
     clock = pygame.time.Clock()
 
-    #set the difficulty level
+    # Set the difficulty level
     difficulty = "medium"
-    
+
     # Create the test level
     test_level = Level()
 
@@ -93,6 +94,11 @@ def main():
     character_sprites = pygame.sprite.Group()
     character_sprites.add(player)
 
+    # Creating and adding enemies
+    enemies = pygame.sprite.Group()
+    enemy = Enemy(player.rect.x, player.rect.y)  # Enemy spawns at the player's starting position
+    enemies.add(enemy)
+
     running = True
     while running:
         for event in pygame.event.get():
@@ -104,20 +110,26 @@ def main():
                 # I will use this to debug my current issue -- !resolved!
                 print(f"Mouse button {event.button} pressed at {event.pos}")
 
-        
-        
         handle_input(player)
         character_sprites.update()
+        enemies.update(test_level.platforms)  # Pass platforms to update method
+
+        # Check for collisions between player and platforms
         test_level.check_collisions(player)
+
+        # Check for collisions between player and enemies
+        if pygame.sprite.spritecollideany(player, enemies):
+            player.take_damage(10)  # Example: player takes damage upon collision
 
         screen.fill((50, 50, 100))
         test_level.draw(screen)  # Draw the test level platforms
         character_sprites.draw(screen)
+        enemies.draw(screen)  # Draw the enemies
         
         player.arrows.draw(screen)
         player.draw_health_bar(screen)
         player.draw_health_text(screen)
-        
+
         pygame.display.flip()
         clock.tick(120)
 
@@ -125,3 +137,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
