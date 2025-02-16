@@ -1,6 +1,7 @@
 # Libraries
 import pygame
 import os
+import math
 from Modules import Player
 from Modules import Platform
 from Modules import Level
@@ -43,6 +44,7 @@ def handle_input(player):
     # Call aim_bow to update the aim_angle only if LMB is held down
     if mouse_buttons[0]:
         player.aim_bow(mouse_pos)
+        print("aim_bow called")  # Debug line
 
     # Handle shooting state
     if mouse_buttons[0] and player.equipped_weapon == "bow":
@@ -54,6 +56,7 @@ def handle_input(player):
         if player.equipped_weapon == "bow":
             player.shoot_arrow()
         player.shooting = False
+        player.clear_trajectory() #removes trajectory
             
             
 # Start level function
@@ -127,6 +130,8 @@ def main():
             player.take_damage(10)  # Example: player takes damage upon collision
 
         screen.fill((50, 50, 100))
+        
+        player.draw_trajectory()
         test_level.draw(screen)  # Draw the test level platforms
         character_sprites.draw(screen)
         enemies.draw(screen)  # Draw the enemies

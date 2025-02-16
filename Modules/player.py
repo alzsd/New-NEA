@@ -48,17 +48,19 @@ class Player(pygame.sprite.Sprite):
         self.max_health = max_health
         self.health = self.max_health
         self.equipped_weapon = "bow"
+        self.speed = 20  # Updated the speed for calculating trajectory
         
-        #keep track of arrow shooting spritesheet:
+        # Keep track of arrow shooting spritesheet:
         self.shooting_timer = 0.0
         self.shooting_duration = 0.4
-        self.damage_cooldown = 0 #cooldown time tracker
-        self.damage_cooldown_duration = 5*120 #sets cooldown time
+        self.damage_cooldown = 0  # Cooldown time tracker
+        self.damage_cooldown_duration = 5*120  # Sets cooldown time
                 
-        #bow cooldown attributes:
+        # Bow cooldown attributes:
         self.shooting_cooldown = 1.0
         self.last_shot_time = 0.0
-        self.shooting = False # This merely tracks the shooting state!
+        self.shooting = False  # This merely tracks the shooting state!
+        self.trajectory = []  # To store the trajectory points
         
         # Defining the path to the assets folder
         assets_path = os.path.join(os.path.dirname(__file__), "Assets")
@@ -97,7 +99,7 @@ class Player(pygame.sprite.Sprite):
         self.gravity = 1
         self.frame_count = 0
 
-        #arrow group
+        # Arrow group
         self.arrows = pygame.sprite.Group()
 
     def load_frames(self, sprite_sheet, num_columns):
@@ -119,7 +121,7 @@ class Player(pygame.sprite.Sprite):
         return frames
 
     def attack(self):
-        if self.equipped_weapon == "bow": #and not self.shooting
+        if self.equipped_weapon == "bow":
             self.shooting = True  # Set to True when attack starts
             self.current_frames = self.bow_frames
 
@@ -130,14 +132,37 @@ class Player(pygame.sprite.Sprite):
             arrow = Arrow(self.rect.centerx, self.rect.centery, direction, self.aim_angle)
             self.arrows.add(arrow)
 
+    def calculate_trajectory(self, gravity=0.2, num_points=30):
+        self.trajectory = []
+        t = 0
+        interval = 1.2  # Time interval between points
+        for _ in range(num_points):
+            t += interval
+            x = self.rect.centerx + self.speed * t * math.cos(self.aim_angle)
+            y = self.rect.centery + self.speed * t * math.sin(self.aim_angle) + 0.5 * gravity * t ** 2
+            self.trajectory.append((x, y))
+            print(f"Trajectory: {self.trajectory}")  # Debug line
 
+    def draw_trajectory(self):
+        print("Drawing trajectory...")
+        for point in self.trajectory:
+            pygame.draw.circle(self.screen, (127, 127, 127), (int(point[0]), int(point[1])), 3)  # Grey color for the trajectory
+
+    def clear_trajectory(self):
+        self.trajectory = [] # no points = no trajectory shown anymore
+
+    def aim_bow(self, mouse_pos):
+        dx = mouse_pos[0] - self.rect.centerx
+        dy = mouse_pos[1] - self.rect.centery
+        self.aim_angle = math.atan2(dy, dx)
+        self.calculate_trajectory()  # Calculate the trajectory whenever the player aims
 
     def update(self):
         self.rect.x += self.x_vel
         self.rect.y += self.y_vel
         self.y_vel += self.gravity
         
-        #Decrementing the damage cooldown timer
+        # Decrementing the damage cooldown timer
         if self.damage_cooldown > 0:
             self.damage_cooldown -= 1
         
@@ -152,14 +177,11 @@ class Player(pygame.sprite.Sprite):
         if self.shooting and self.equipped_weapon == "bow":
             self.current_frames = self.bow_frames
             self.direction = "left" if self.x_vel < 0 else "right"
-            
         elif self.is_jumping:
             self.current_frames = self.jump_frames
-            
         elif self.x_vel != 0:
             self.current_frames = self.run_frames
             self.direction = "left" if self.x_vel < 0 else "right"
-            
         else:
             self.current_frames = self.idle_frames
 
@@ -187,6 +209,10 @@ class Player(pygame.sprite.Sprite):
 
         # Ensure the player stays above the floor
         self.check_ground_collision()
+        
+        # Draw the trajectory if the player is aiming
+        if self.shooting:
+            self.draw_trajectory()
 
     # Method to ensure the player collides with the ground
     def check_ground_collision(self):
@@ -211,7 +237,7 @@ class Player(pygame.sprite.Sprite):
 
     def take_damage(self, amount):
         if self.damage_cooldown == 0:  # Check if cooldown is zero
-            print(f"Taking damage -{amount}") #debug line
+            print(f"Taking damage -{amount}")  # Debug line
             self.health -= amount
             self.damage_cooldown = self.damage_cooldown_duration  # Reset cooldown
             if self.health <= 0:
@@ -247,8 +273,30 @@ class Player(pygame.sprite.Sprite):
         dx = mouse_pos[0] - self.rect.centerx
         dy = mouse_pos[1] - self.rect.centery
         self.aim_angle = math.atan2(dy, dx)
+        print(f"aim_angle: {self.aim_angle}")  # Debug line
+        self.calculate_trajectory() 
         
         
     def die(self):
         print("player has died!")
         #more here later on
+"""  
+#functions:
+def calculate_trajectory(start_pos, aim_angle, speed, gravity=0.2, num_points=30):
+    trajectory = []
+    t = 0
+    interval = 0.1  # Time interval between points
+    for _ in range(num_points):
+        t += interval
+        x = start_pos[0] + speed * t * math.cos(aim_angle)
+        y = start_pos[1] + speed * t * math.sin(aim_angle) + 0.5 * gravity * t ** 2
+        trajectory.append((x, y))
+    return trajectory
+
+
+def draw_trajectory(screen, trajectory):
+    for point in trajectory:
+        pygame.draw.circle(screen, (127,127,127), (int(point[0]), int(point[1])), 3)  # Grey color for the trajectory (may change)       
+        
+"""
+
