@@ -27,31 +27,47 @@ class Arrow(pygame.sprite.Sprite):
         self.gravity = 0.2
         
         self.timer = 0  # Initialise a timer to track arrow lifespan
+        self.stuck = False  # Flag to check if the arrow is stuck
+        self.alpha = 255  # Opacity for fading
         
-    def update(self, enemies):
-        self.y_vel += self.gravity #simulates gravitational acceleration
-        self.rect.x += self.x_vel
-        self.rect.y += self.y_vel #changes the next position of the rect
         
-        #rotating the image based on its resultant velocity
-        angle = math.degrees(math.atan2(-self.y_vel, self.x_vel))
-        self.image = pygame.transform.rotate(self.original_image, angle)
-        self.rect = self.image.get_rect(center = self.rect.center)
-        
-        self.timer += 1/120 # assuming my game will run at 120 fps
-        
-        if self.timer > 1: #setting a time limit
-            print(f"Arrow killed - lifespan exceeded {self.timer}")
-            self.kill() #removes the arrow from the existing sprite group
+    def update(self, enemies, platforms, screen_width, screen_height):
+        if not self.stuck:
+            self.y_vel += self.gravity #simulates gravitational acceleration
+            self.rect.x += self.x_vel
+            self.rect.y += self.y_vel #changes the next position of the rect
             
-        print(f"Arrow position: {self.rect.topleft}")
+            #rotating the image based on its resultant velocity
+            angle = math.degrees(math.atan2(-self.y_vel, self.x_vel))
+            self.image = pygame.transform.rotate(self.original_image, angle)
+            self.rect = self.image.get_rect(center = self.rect.center)
+            
+            self.timer += 1/120 # assuming my game will run at 120 fps
+            
+            if self.timer > 1: #setting a time limit
+                print(f"Arrow killed - lifespan exceeded {self.timer}")
+                self.kill() #removes the arrow from the existing sprite group
+                
+            #print(f"Arrow position: {self.rect.topleft}")
 
-        hit_enemies = pygame.sprite.spritecollide(self, enemies, False)
-        for enemy in hit_enemies:
-            print(f"Arrow hit enemy at position: {enemy.rect.topleft}")
-            print(f"Arrow hit enemy at position: {enemy.rect.topleft}, size: {enemy.rect.size}")
-            enemy.take_damage(10)
-            self.kill()
+            hit_enemies = pygame.sprite.spritecollide(self, enemies, False)
+            for enemy in hit_enemies:
+                print(f"Arrow hit enemy at position: {enemy.rect.topleft}")
+                print(f"Arrow hit enemy at position: {enemy.rect.topleft}, size: {enemy.rect.size}")
+                enemy.take_damage(10)
+                self.kill()
+                
+            hit_platforms = pygame.sprite.spritecollide(self, platforms, False)
+            if hit_platforms or self.rect.left < 0 or self.rect.right > screen_width or self.rect.top < 0 or self.rect.bottom > screen_height:
+                self.stuck = True
+        
+        else:
+            # Fade away
+            self.alpha -= 5  # Adjust fading speed as needed
+            if self.alpha <= 0:
+                self.kill()
+            else:
+                self.image.set_alpha(self.alpha)
 
     def draw(self, surface):
         surface.blit(self.image, self.rect)
@@ -97,6 +113,13 @@ class Player(pygame.sprite.Sprite):
         self.idle_sheet = pygame.image.load(idle_sheet_path).convert_alpha()
         self.jump_sheet = pygame.image.load(jump_sheet_path).convert_alpha()
         self.bow_sheet = pygame.image.load(bow_sheet_path).convert_alpha()
+
+        # Scale the sprite sheets
+        self.run_sheet = pygame.transform.scale(self.run_sheet, (int(self.run_sheet.get_width() * 1.2), int(self.run_sheet.get_height() * 1.5)))
+        self.idle_sheet = pygame.transform.scale(self.idle_sheet, (int(self.idle_sheet.get_width() * 1.2), int(self.idle_sheet.get_height() * 1.5)))
+        self.jump_sheet = pygame.transform.scale(self.jump_sheet, (int(self.jump_sheet.get_width() * 1.2), int(self.jump_sheet.get_height() * 1.5)))
+        self.bow_sheet = pygame.transform.scale(self.bow_sheet, (int(self.bow_sheet.get_width() * 1.2), int(self.bow_sheet.get_height() * 1.5)))
+
 
         # Initialize the rect attribute before calling load_frames
         self.rect = pygame.Rect(0, 0, 0, 0)
@@ -165,11 +188,11 @@ class Player(pygame.sprite.Sprite):
             x = self.rect.centerx + speed * t * math.cos(self.aim_angle)
             y = self.rect.centery + speed * t * math.sin(self.aim_angle) + 0.5 * gravity * t ** 2
             self.trajectory.append((x, y))
-            print(f"Trajectory: {self.trajectory}")  # Debug line
+            #print(f"Trajectory: {self.trajectory}")  # Debug line
 
 
     def draw_trajectory(self):
-        print("Drawing trajectory...")
+        #print("Drawing trajectory...")
         for point in self.trajectory:
             pygame.draw.circle(self.screen, (127, 127, 127), (int(point[0]), int(point[1])), 3)  # Grey color for the trajectory
 
@@ -178,7 +201,7 @@ class Player(pygame.sprite.Sprite):
 
 
 
-    def update(self, enemies):
+    def update(self, enemies, platforms, screen_width, screen_height):
         self.rect.x += self.x_vel
         self.rect.y += self.y_vel
         self.y_vel += self.gravity
@@ -187,7 +210,8 @@ class Player(pygame.sprite.Sprite):
         if self.damage_cooldown > 0:
             self.damage_cooldown -= 1
         
-        self.arrows.update(enemies)
+        # Ensure the arrows update with the new arguments
+        self.arrows.update(enemies, platforms, screen_width, screen_height)
         
         if self.shooting:
             self.shooting_timer -= 1 / 120  # Assuming 120 FPS
@@ -196,7 +220,6 @@ class Player(pygame.sprite.Sprite):
 
         # Choose the correct set of frames based on state
         if self.shooting and self.equipped_weapon == "bow":
-            self.current_frames = self.bow_frames
             self.direction = "left" if self.x_vel < 0 else "right"
         elif self.is_jumping:
             self.current_frames = self.jump_frames
@@ -234,6 +257,7 @@ class Player(pygame.sprite.Sprite):
         # Draw the trajectory if the player is aiming
         if self.shooting:
             self.draw_trajectory()
+
 
     # Method to ensure the player collides with the ground
     def check_ground_collision(self):
@@ -295,8 +319,20 @@ class Player(pygame.sprite.Sprite):
         dy = mouse_pos[1] - self.rect.centery
         self.aim_angle = math.atan2(dy, dx)
         print(f"aim_angle: {self.aim_angle}")  # Debug line
+        
+        # Flip the bow frames if the mouse is to the left of the player
+        if dx < 0:
+            self.current_frames = [pygame.transform.flip(frame, True, False) for frame in self.bow_frames]
+            self.direction = "left"
+            print("Flipped bow frames to the left")
+        else:
+            self.current_frames = self.bow_frames
+            self.direction = "right"
+            print("Bow frames to the right")
+        
         speed = self.calculate_arrow_speed(mouse_pos)
-        self.calculate_trajectory(speed) 
+        self.calculate_trajectory(speed)
+
         
         
     def die(self):

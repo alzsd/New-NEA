@@ -121,7 +121,7 @@ def main():
                 print(f"Mouse button {event.button} pressed at {event.pos}")
 
         handle_input(player)  
-        character_sprites.update(enemies)
+        character_sprites.update(enemies, test_level.platforms, screen.get_width(), screen.get_height())
         enemies.update(test_level.platforms)  # Pass platforms to update method
 
         # Check for collisions between player and platforms
