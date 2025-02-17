@@ -1,10 +1,12 @@
 import pygame
 import os
 import math
+MAX_ARROW_SPEED = 15
+MAX_DISPLACEMENT = 200
 
 #arrow class
 class Arrow(pygame.sprite.Sprite):
-    def __init__(self, x, y, direction, aim_angle):
+    def __init__(self, x, y, direction, aim_angle,speed):
         super().__init__()
         assets_path = os.path.join(os.path.dirname(__file__), "Assets")
         arrow_path = os.path.join(assets_path, "Arrow_7.png")
@@ -17,7 +19,7 @@ class Arrow(pygame.sprite.Sprite):
         
         self.rect = self.image.get_rect(center = (x, y))
         self.aim_angle = aim_angle
-        self.speed = 20
+        self.speed = speed
         
         self.direction = direction
         self.x_vel = self.speed * math.cos(self.aim_angle)
@@ -61,14 +63,14 @@ class Arrow(pygame.sprite.Sprite):
     
 # Player class
 class Player(pygame.sprite.Sprite):
-    def __init__(self, start_pos, screen, max_health):
+    def __init__(self, start_pos, screen, max_health,speed):
         super().__init__()
         self.screen = screen
         self.direction = "right"  # Initial direction of sprite
         self.max_health = max_health
         self.health = self.max_health
         self.equipped_weapon = "bow"
-        self.speed = 20  # Updated the speed for calculating trajectory
+        self.speed = speed  # Updated the speed for calculating trajectory
         
         # Keep track of arrow shooting spritesheet:
         self.shooting_timer = 0.0
@@ -149,19 +151,22 @@ class Player(pygame.sprite.Sprite):
         if self.equipped_weapon == "bow":
             print("shooting arrow - !Debug!")
             direction = self.direction
-            arrow = Arrow(self.rect.centerx, self.rect.centery, direction, self.aim_angle)
+            arrow_speed = self.calculate_arrow_speed(pygame.mouse.get_pos())
+            arrow = Arrow(self.rect.centerx, self.rect.centery, direction, self.aim_angle, arrow_speed)
             self.arrows.add(arrow)
 
-    def calculate_trajectory(self, gravity=0.2, num_points=30):
+
+    def calculate_trajectory(self, speed, gravity=0.2, num_points=30):
         self.trajectory = []
         t = 0
         interval = 1.2  # Time interval between points
         for _ in range(num_points):
             t += interval
-            x = self.rect.centerx + self.speed * t * math.cos(self.aim_angle)
-            y = self.rect.centery + self.speed * t * math.sin(self.aim_angle) + 0.5 * gravity * t ** 2
+            x = self.rect.centerx + speed * t * math.cos(self.aim_angle)
+            y = self.rect.centery + speed * t * math.sin(self.aim_angle) + 0.5 * gravity * t ** 2
             self.trajectory.append((x, y))
             print(f"Trajectory: {self.trajectory}")  # Debug line
+
 
     def draw_trajectory(self):
         print("Drawing trajectory...")
@@ -171,11 +176,7 @@ class Player(pygame.sprite.Sprite):
     def clear_trajectory(self):
         self.trajectory = [] # no points = no trajectory shown anymore
 
-    def aim_bow(self, mouse_pos):
-        dx = mouse_pos[0] - self.rect.centerx
-        dy = mouse_pos[1] - self.rect.centery
-        self.aim_angle = math.atan2(dy, dx)
-        self.calculate_trajectory()  # Calculate the trajectory whenever the player aims
+
 
     def update(self, enemies):
         self.rect.x += self.x_vel
@@ -294,11 +295,17 @@ class Player(pygame.sprite.Sprite):
         dy = mouse_pos[1] - self.rect.centery
         self.aim_angle = math.atan2(dy, dx)
         print(f"aim_angle: {self.aim_angle}")  # Debug line
-        self.calculate_trajectory() 
+        speed = self.calculate_arrow_speed(mouse_pos)
+        self.calculate_trajectory(speed) 
         
         
     def die(self):
         print("player has died!")
         #more here later on
 
+    def calculate_arrow_speed(self, mouse_pos):
+        displacement = abs(mouse_pos[0] - self.rect.centerx)
+        if displacement > MAX_DISPLACEMENT:
+            displacement = MAX_DISPLACEMENT
+        return (displacement / MAX_DISPLACEMENT) * MAX_ARROW_SPEED
 

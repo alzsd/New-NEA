@@ -11,6 +11,8 @@ from Modules import Enemy
 
 # Global variables
 speed = 3
+MAX_ARROW_SPEED = 15
+MAX_DISPLACEMENT = 200
 
 # Dictionaries for start positions
 start_positions = {
@@ -71,7 +73,7 @@ def start_level(level_name, screen, difficulty):
     else:  # hard
         max_health = 75
     
-    player = Player(start_pos, screen, max_health)
+    player = Player(start_pos, screen, max_health,speed)
     return player
 
 
