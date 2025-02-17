@@ -26,7 +26,7 @@ def handle_input(player):
     keys = pygame.key.get_pressed()
     mouse_buttons = pygame.mouse.get_pressed()
     mouse_pos = pygame.mouse.get_pos()  # Get the current mouse position    
-    
+
     # Disable movement if the player is shooting
     if player.shooting:
         player.stop()  # Ensure the player stops moving when shooting
@@ -36,11 +36,14 @@ def handle_input(player):
             player.move_left(speed)
         elif keys[pygame.K_RIGHT] or keys[pygame.K_d]:
             player.move_right(speed)
-        elif keys[pygame.K_SPACE] or keys[pygame.K_UP]:
+        
+        # Handle jumping independently of movement
+        if keys[pygame.K_SPACE] or keys[pygame.K_UP]:
             player.jump()
-        elif keys[pygame.K_2]:
+        
+        if keys[pygame.K_2]:
             player.equipped_weapon = "bow"
-        else:
+        elif not (keys[pygame.K_LEFT] or keys[pygame.K_a] or keys[pygame.K_RIGHT] or keys[pygame.K_d]):
             player.stop()
 
     # Call aim_bow to update the aim_angle only if LMB is held down
@@ -58,7 +61,8 @@ def handle_input(player):
         if player.equipped_weapon == "bow":
             player.shoot_arrow()
         player.shooting = False
-        player.clear_trajectory() #removes trajectory
+        player.clear_trajectory()  # removes trajectory
+
             
             
 # Start level function
