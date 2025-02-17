@@ -118,8 +118,8 @@ def main():
                 # I will use this to debug my current issue -- !resolved!
                 print(f"Mouse button {event.button} pressed at {event.pos}")
 
-        handle_input(player)
-        character_sprites.update()
+        handle_input(player)  
+        character_sprites.update(enemies)
         enemies.update(test_level.platforms)  # Pass platforms to update method
 
         # Check for collisions between player and platforms
@@ -142,7 +142,11 @@ def main():
         
         # Draw health bars for enemies
         for enemy in enemies:
+            #enemy.draw(screen)
             enemy.draw_health_bar(screen)
+            
+        #for arrow in player.arrows:
+            #arrow.draw(screen)
 
         pygame.display.flip()
         clock.tick(120)

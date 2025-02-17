@@ -7,11 +7,14 @@ class Arrow(pygame.sprite.Sprite):
     def __init__(self, x, y, direction, aim_angle):
         super().__init__()
         assets_path = os.path.join(os.path.dirname(__file__), "Assets")
-        arrow_path = os.path.join(assets_path, "Arrow_4.png")
+        arrow_path = os.path.join(assets_path, "Arrow_7.png")
         self.image = pygame.image.load(arrow_path).convert_alpha() #this links the image file
-        #self.image = pygame.transform.scale(self.image, int(self.image.get_width()*0.2 ), int(self.image.get_height()*0.2))
+        
+        self.image = pygame.transform.scale(self.image, (int(self.image.get_width() * 3), int(self.image.get_height() * 1.5)))
+
         
         self.original_image = self.image #keeps track of original direction of the arrow
+        
         self.rect = self.image.get_rect(center = (x, y))
         self.aim_angle = aim_angle
         self.speed = 20
@@ -23,7 +26,7 @@ class Arrow(pygame.sprite.Sprite):
         
         self.timer = 0  # Initialise a timer to track arrow lifespan
         
-    def update(self):
+    def update(self, enemies):
         self.y_vel += self.gravity #simulates gravitational acceleration
         self.rect.x += self.x_vel
         self.rect.y += self.y_vel #changes the next position of the rect
@@ -38,7 +41,24 @@ class Arrow(pygame.sprite.Sprite):
         if self.timer > 0.5: #setting a time limit
             print(f"Arrow killed - lifespan exceeded {self.timer}")
             self.kill() #removes the arrow from the existing sprite group
+            
+        print(f"Arrow position: {self.rect.topleft}")
 
+        hit_enemies = pygame.sprite.spritecollide(self, enemies, False)
+        for enemy in hit_enemies:
+            print(f"Arrow hit enemy at position: {enemy.rect.topleft}")
+            print(f"Arrow hit enemy at position: {enemy.rect.topleft}, size: {enemy.rect.size}")
+            enemy.take_damage(10)
+            self.kill()
+
+    def draw(self, surface):
+        surface.blit(self.image, self.rect)
+        pygame.draw.rect(surface, (0, 255, 0), self.rect, 1)  # Green box around the arrow
+
+
+
+
+    
 # Player class
 class Player(pygame.sprite.Sprite):
     def __init__(self, start_pos, screen, max_health):
@@ -157,7 +177,7 @@ class Player(pygame.sprite.Sprite):
         self.aim_angle = math.atan2(dy, dx)
         self.calculate_trajectory()  # Calculate the trajectory whenever the player aims
 
-    def update(self):
+    def update(self, enemies):
         self.rect.x += self.x_vel
         self.rect.y += self.y_vel
         self.y_vel += self.gravity
@@ -166,7 +186,7 @@ class Player(pygame.sprite.Sprite):
         if self.damage_cooldown > 0:
             self.damage_cooldown -= 1
         
-        self.arrows.update()
+        self.arrows.update(enemies)
         
         if self.shooting:
             self.shooting_timer -= 1 / 120  # Assuming 120 FPS
@@ -280,23 +300,5 @@ class Player(pygame.sprite.Sprite):
     def die(self):
         print("player has died!")
         #more here later on
-"""  
-#functions:
-def calculate_trajectory(start_pos, aim_angle, speed, gravity=0.2, num_points=30):
-    trajectory = []
-    t = 0
-    interval = 0.1  # Time interval between points
-    for _ in range(num_points):
-        t += interval
-        x = start_pos[0] + speed * t * math.cos(aim_angle)
-        y = start_pos[1] + speed * t * math.sin(aim_angle) + 0.5 * gravity * t ** 2
-        trajectory.append((x, y))
-    return trajectory
 
-
-def draw_trajectory(screen, trajectory):
-    for point in trajectory:
-        pygame.draw.circle(screen, (127,127,127), (int(point[0]), int(point[1])), 3)  # Grey color for the trajectory (may change)       
-        
-"""
 

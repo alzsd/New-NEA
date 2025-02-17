@@ -49,3 +49,6 @@ class Enemy(pygame.sprite.Sprite):
         pygame.draw.rect(surface, (255, 0, 0), (self.rect.x, self.rect.y - 10, bar_width, bar_height))
         pygame.draw.rect(surface, (0, 255, 0), (self.rect.x, self.rect.y - 10, health_bar_length, bar_height))
         
+    def draw(self, surface):
+        surface.blit(self.image, self.rect)
+        pygame.draw.rect(surface, (0, 255, 0), self.rect, 1)  # Green box around the enemy
