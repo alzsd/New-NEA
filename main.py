@@ -11,8 +11,8 @@ from Modules import Enemy
 
 # Global variables
 speed = 3
-MAX_ARROW_SPEED = 15
-MAX_DISPLACEMENT = 200
+#MAX_ARROW_SPEED = 15
+#MAX_DISPLACEMENT = 600
 
 # Dictionaries for start positions
 start_positions = {

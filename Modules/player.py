@@ -2,7 +2,7 @@ import pygame
 import os
 import math
 MAX_ARROW_SPEED = 15
-MAX_DISPLACEMENT = 200
+MAX_DISPLACEMENT = 600
 
 #arrow class
 class Arrow(pygame.sprite.Sprite):
@@ -40,7 +40,7 @@ class Arrow(pygame.sprite.Sprite):
         
         self.timer += 1/120 # assuming my game will run at 120 fps
         
-        if self.timer > 0.5: #setting a time limit
+        if self.timer > 1: #setting a time limit
             print(f"Arrow killed - lifespan exceeded {self.timer}")
             self.kill() #removes the arrow from the existing sprite group
             
@@ -304,7 +304,9 @@ class Player(pygame.sprite.Sprite):
         #more here later on
 
     def calculate_arrow_speed(self, mouse_pos):
-        displacement = abs(mouse_pos[0] - self.rect.centerx)
+        dx = mouse_pos[0] - self.rect.centerx
+        dy = mouse_pos[1] - self.rect.centery
+        displacement = math.sqrt(dx**2 + dy**2) #pythagorean theorem
         if displacement > MAX_DISPLACEMENT:
             displacement = MAX_DISPLACEMENT
         return (displacement / MAX_DISPLACEMENT) * MAX_ARROW_SPEED
