@@ -88,14 +88,14 @@ def start_level(level_name, screen, difficulty):
 # Main initialiser
 def main():
     pygame.init()
-    screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)  # Fullscreen mode
+    screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
     clock = pygame.time.Clock()
 
     # Load the background image
     background_image = pygame.image.load("BG1.jpg").convert()
 
     # Define the world width for the extended game map
-    WORLD_WIDTH = 4000
+    WORLD_WIDTH = 2000
 
     # Set the difficulty level
     difficulty = "medium"
@@ -141,14 +141,15 @@ def main():
 
         # Update sprites with scroll_x
         character_sprites.update(enemies, test_level.platforms, screen.get_width(), screen.get_height(), scroll_x)
-        enemies.update(test_level.platforms, player)
+        for enemy in enemies:
+            enemy.update(test_level.platforms, player, scroll_x)
 
         # Check for collisions between player and platforms
         test_level.check_collisions(player)
 
         # Check for collisions between player and enemies
         if pygame.sprite.spritecollideany(player, enemies):
-            player.take_damage(10)  # Example: player takes damage upon collision
+            player.take_damage(10)
 
         # Draw the background image
         screen.blit(background_image, (0, 0))
@@ -161,7 +162,7 @@ def main():
             enemy.draw(screen, scroll_x)
             enemy.draw_health_bar(screen, scroll_x)
 
-        player.draw_trajectory(scroll_x)
+        player.draw_trajectory()  # Pass scroll_x only
         player.arrows.draw(screen)
         player.draw_health_bar(screen)
         player.draw_health_text(screen)
@@ -173,4 +174,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

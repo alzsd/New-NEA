@@ -194,10 +194,10 @@ class Player(pygame.sprite.Sprite):
             #print(f"Trajectory: {self.trajectory}")  # Debug line
 
 
-    def draw_trajectory(self, scroll_x):
+    def draw_trajectory(self):
         #print("drawing trajectory...")
         for point in self.trajectory:
-            pygame.draw.circle(self.screen, (127, 127, 127), (int(point[0] + scroll_x), int(point[1])), 3)  # Grey color for the trajectory
+            pygame.draw.circle(self.screen, (127, 127, 127), (int(point[0]), int(point[1])), 3)  # Grey color for the trajectory
 
     def clear_trajectory(self):
         self.trajectory = [] # no points = no trajectory shown anymore
@@ -259,7 +259,7 @@ class Player(pygame.sprite.Sprite):
         
         # Draw the trajectory if the player is aiming
         if self.shooting:
-            self.draw_trajectory(scroll_x)
+            self.draw_trajectory()
 
 
     # Method to ensure the player collides with the ground
