@@ -87,6 +87,11 @@ def main():
     screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)  # Fullscreen mode
     clock = pygame.time.Clock()
 
+    # Load the background image
+    #assets_path = os.path.join(os.path.dirname(__file__), "Assets")
+    #background_path = os.path.join(assets_path, "BG.jpg")
+    background_image = pygame.image.load("BG1.jpg").convert()
+
     # Set the difficulty level
     difficulty = "medium"
 
@@ -95,9 +100,9 @@ def main():
 
     # Add floor platforms with a hole
     for x in range(0, 500, 100):  # Adding ground platforms with a gap (hole)
-        test_level.add_platform(Platform(x, screen.get_height() - 50, 100, 50))
+        test_level.add_platform(Platform(x, screen.get_height() - 50, 100, 60))
     for x in range(600, screen.get_width(), 100):  # Continue platforms after the hole
-        test_level.add_platform(Platform(x, screen.get_height() - 50, 100, 50))
+        test_level.add_platform(Platform(x, screen.get_height() - 50, 100, 100))
 
     # Add floating platforms based on my example image
     test_level.add_platform(Platform(300, screen.get_height() - 200, 100, 20))
@@ -135,7 +140,8 @@ def main():
         if pygame.sprite.spritecollideany(player, enemies):
             player.take_damage(10)  # Example: player takes damage upon collision
 
-        screen.fill((50, 50, 100))
+        # Draw the background image
+        screen.blit(background_image, (0, 0))
         
         player.draw_trajectory()
         test_level.draw(screen)  # Draw the test level platforms
