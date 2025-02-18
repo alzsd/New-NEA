@@ -29,11 +29,32 @@ class Enemy(pygame.sprite.Sprite):
         self.gravity = 1
         self.is_dying = False
         self.alpha = 255
+        
+        # Patrol settings
+        self.spawn_x = x
+        self.patrol_range = 200
+        self.patrol_limits = (self.spawn_x - self.patrol_range, self.spawn_x + self.patrol_range)
+        self.speed = 1
+        self.patrol_direction = 1  # 1 for right, -1 for left
+        
+        # Jump settings
+        self.is_jumping = False
+        self.jump_strength = -15
+        self.jump_interval = 120  # Number of frames between jumps
+        self.jump_timer = self.jump_interval
 
     def update(self, *args):
         platforms = args[0]
-        
+        player = args[1]  # Assuming the player sprite is passed as the second argument
+
         if not self.is_dying:
+            if abs(self.rect.x - player.rect.x) <= self.patrol_range + 50:
+                self.jump()
+                self.pursue_player(player)
+            else:
+                # Patrol logic
+                self.jump()
+
             self.rect.x += self.x_vel
             self.rect.y += self.y_vel
             self.y_vel += self.gravity
@@ -84,3 +105,30 @@ class Enemy(pygame.sprite.Sprite):
             self.kill()
         else:
             self.image.set_alpha(self.alpha)
+            
+            
+    def pursue_player(self, player):
+        # Pursue the player only if they are within the extended patrol range
+        if self.patrol_limits[0] <= player.rect.x <= self.patrol_limits[1] + 10:
+            if self.rect.x < player.rect.x:
+                self.x_vel = self.speed
+            else:
+                self.x_vel = -self.speed
+        else:
+            # Return to patrol if the player is out of range
+            if self.rect.x < self.spawn_x:
+                self.x_vel = self.speed
+            elif self.rect.x > self.spawn_x:
+                self.x_vel = -self.speed
+                
+    def jump(self):
+        self.jump_timer -= 1
+        if self.jump_timer <= 0:
+            self.jump_timer = self.jump_interval
+            if self.rect.x >= self.patrol_limits[1] or self.rect.x <= self.patrol_limits[0]:
+                self.patrol_direction *= -1  # Change direction
+            self.x_vel = self.patrol_direction * self.speed
+            self.y_vel = self.jump_strength
+            self.is_jumping = True
+        else:
+            self.x_vel = self.patrol_direction * self.speed if self.is_jumping else 0

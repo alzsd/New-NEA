@@ -110,7 +110,7 @@ def main():
 
     # Creating and adding enemies
     enemies = pygame.sprite.Group()
-    enemy = Enemy(player.rect.x, player.rect.y)  # Enemy spawns at the player's starting position
+    enemy = Enemy(300, 930)  # Enemy spawns at the player's starting position
     enemies.add(enemy)
 
     running = True
@@ -126,7 +126,7 @@ def main():
 
         handle_input(player)  
         character_sprites.update(enemies, test_level.platforms, screen.get_width(), screen.get_height())
-        enemies.update(test_level.platforms)  # Pass platforms to update method
+        enemies.update(test_level.platforms, player)  # Pass platforms to update method
 
         # Check for collisions between player and platforms
         test_level.check_collisions(player)
