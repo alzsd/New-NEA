@@ -9,17 +9,21 @@ from Modules import Arrow
 from Modules import Enemy
 #from Modules import Arrow
 
-# Global variables
+# Global variables/constants
 speed = 3
-#MAX_ARROW_SPEED = 15
-#MAX_DISPLACEMENT = 600
+WORLD_WIDTH = 4000  # May change
+player_start_x = 50
+player_start_y = 300
 
 # Dictionaries for start positions
 start_positions = {
-   "level1": (50, 300),
-   "level2": (50, 300),
-   "level3": (50, 300)
+   "level1": (player_start_x, player_start_y),
+   "level2": (player_start_x, player_start_y),
+   "level3": (player_start_x, player_start_y)
 }
+#MAX_ARROW_SPEED = 15
+#MAX_DISPLACEMENT = 600
+
 
 # Handle input function
 def handle_input(player):
@@ -88,9 +92,10 @@ def main():
     clock = pygame.time.Clock()
 
     # Load the background image
-    #assets_path = os.path.join(os.path.dirname(__file__), "Assets")
-    #background_path = os.path.join(assets_path, "BG.jpg")
     background_image = pygame.image.load("BG1.jpg").convert()
+
+    # Define the world width for the extended game map
+    WORLD_WIDTH = 4000
 
     # Set the difficulty level
     difficulty = "medium"
@@ -99,12 +104,12 @@ def main():
     test_level = Level()
 
     # Add floor platforms with a hole
-    for x in range(0, 500, 100):  # Adding ground platforms with a gap (hole)
+    for x in range(0, 500, 100):
         test_level.add_platform(Platform(x, screen.get_height() - 50, 100, 60))
-    for x in range(600, screen.get_width(), 100):  # Continue platforms after the hole
+    for x in range(600, WORLD_WIDTH, 100):
         test_level.add_platform(Platform(x, screen.get_height() - 50, 100, 100))
 
-    # Add floating platforms based on my example image
+    # Add floating platforms
     test_level.add_platform(Platform(300, screen.get_height() - 200, 100, 20))
     test_level.add_platform(Platform(500, screen.get_height() - 300, 100, 20))
 
@@ -126,12 +131,17 @@ def main():
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 running = False
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                # I will use this to debug my current issue -- !resolved!
                 print(f"Mouse button {event.button} pressed at {event.pos}")
 
-        handle_input(player)  
-        character_sprites.update(enemies, test_level.platforms, screen.get_width(), screen.get_height())
-        enemies.update(test_level.platforms, player)  # Pass platforms to update method
+        handle_input(player)
+        
+        # Calculate the offset for scrolling
+        scroll_x = -player.rect.centerx + screen.get_width() // 2
+        scroll_x = max(-(WORLD_WIDTH - screen.get_width()), min(0, scroll_x))
+
+        # Update sprites with scroll_x
+        character_sprites.update(enemies, test_level.platforms, screen.get_width(), screen.get_height(), scroll_x)
+        enemies.update(test_level.platforms, player)
 
         # Check for collisions between player and platforms
         test_level.check_collisions(player)
@@ -142,24 +152,20 @@ def main():
 
         # Draw the background image
         screen.blit(background_image, (0, 0))
-        
-        player.draw_trajectory()
-        test_level.draw(screen)  # Draw the test level platforms
+
+        # Draw game elements with scroll_x
+        test_level.draw(screen, scroll_x)
         character_sprites.draw(screen)
-        enemies.draw(screen)  # Draw the enemies
         
+        for enemy in enemies:
+            enemy.draw(screen, scroll_x)
+            enemy.draw_health_bar(screen, scroll_x)
+
+        player.draw_trajectory(scroll_x)
         player.arrows.draw(screen)
         player.draw_health_bar(screen)
         player.draw_health_text(screen)
         
-        # Draw health bars for enemies
-        for enemy in enemies:
-            #enemy.draw(screen)
-            enemy.draw_health_bar(screen)
-            
-        #for arrow in player.arrows:
-            #arrow.draw(screen)
-
         pygame.display.flip()
         clock.tick(120)
 

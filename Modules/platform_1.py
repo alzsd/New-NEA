@@ -10,3 +10,6 @@ class Platform(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
+
+    def draw(self, screen, scroll_x):
+        screen.blit(self.image, (self.rect.x + scroll_x, self.rect.y))

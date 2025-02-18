@@ -146,6 +146,9 @@ class Player(pygame.sprite.Sprite):
 
         # Arrow group
         self.arrows = pygame.sprite.Group()
+        
+    def draw(self, screen, scroll_x):
+        screen.blit(self.image, (self.rect.x + scroll_x, self.rect.y))
 
     def load_frames(self, sprite_sheet, num_columns):
         frames = []
@@ -191,17 +194,17 @@ class Player(pygame.sprite.Sprite):
             #print(f"Trajectory: {self.trajectory}")  # Debug line
 
 
-    def draw_trajectory(self):
-        #print("Drawing trajectory...")
+    def draw_trajectory(self, scroll_x):
+        #print("drawing trajectory...")
         for point in self.trajectory:
-            pygame.draw.circle(self.screen, (127, 127, 127), (int(point[0]), int(point[1])), 3)  # Grey color for the trajectory
+            pygame.draw.circle(self.screen, (127, 127, 127), (int(point[0] + scroll_x), int(point[1])), 3)  # Grey color for the trajectory
 
     def clear_trajectory(self):
         self.trajectory = [] # no points = no trajectory shown anymore
 
 
 
-    def update(self, enemies, platforms, screen_width, screen_height):
+    def update(self, enemies, platforms, screen_width, screen_height, scroll_x):
         self.rect.x += self.x_vel
         self.rect.y += self.y_vel
         self.y_vel += self.gravity
@@ -256,7 +259,7 @@ class Player(pygame.sprite.Sprite):
         
         # Draw the trajectory if the player is aiming
         if self.shooting:
-            self.draw_trajectory()
+            self.draw_trajectory(scroll_x)
 
 
     # Method to ensure the player collides with the ground

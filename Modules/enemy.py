@@ -45,7 +45,7 @@ class Enemy(pygame.sprite.Sprite):
 
     def update(self, *args):
         platforms = args[0]
-        player = args[1]  # Assuming the player sprite is passed as the second argument
+        player = args[1]
 
         if not self.is_dying:
             if abs(self.rect.x - player.rect.x) <= self.patrol_range + 50:
@@ -87,35 +87,32 @@ class Enemy(pygame.sprite.Sprite):
         self.image = self.death_sprite_sheet
         self.alpha = 255
             
-    def draw_health_bar(self, surface):
+    def draw_health_bar(self, surface, scroll_x):
         bar_width = 100
         bar_height = 5
         health_bar_length = bar_width * (self.health / self.max_health)
         
-        pygame.draw.rect(surface, (255, 0, 0), (self.rect.x, self.rect.y - 10, bar_width, bar_height))
-        pygame.draw.rect(surface, (0, 255, 0), (self.rect.x, self.rect.y - 10, health_bar_length, bar_height))
+        pygame.draw.rect(surface, (255, 0, 0), (self.rect.x + scroll_x, self.rect.y - 10, bar_width, bar_height))
+        pygame.draw.rect(surface, (0, 255, 0), (self.rect.x + scroll_x, self.rect.y - 10, health_bar_length, bar_height))
         
-    def draw(self, surface):
-        surface.blit(self.image, self.rect)
-        pygame.draw.rect(surface, (0, 255, 0), self.rect, 1)  # Green box around the enemy
+    def draw(self, surface, scroll_x):
+        surface.blit(self.image, (self.rect.x + scroll_x, self.rect.y))
+        #pygame.draw.rect(surface, (0, 255, 0), (self.rect.x + scroll_x, self.rect.y, self.rect.width, self.rect.height), 1)
 
     def fade_out(self):
-        self.alpha -=1
+        self.alpha -= 1
         if self.alpha <= 0:
             self.kill()
         else:
             self.image.set_alpha(self.alpha)
             
-            
     def pursue_player(self, player):
-        # Pursue the player only if they are within the extended patrol range
         if self.patrol_limits[0] <= player.rect.x <= self.patrol_limits[1] + 10:
             if self.rect.x < player.rect.x:
                 self.x_vel = self.speed
             else:
                 self.x_vel = -self.speed
         else:
-            # Return to patrol if the player is out of range
             if self.rect.x < self.spawn_x:
                 self.x_vel = self.speed
             elif self.rect.x > self.spawn_x:

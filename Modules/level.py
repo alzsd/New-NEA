@@ -9,14 +9,13 @@ class Level:
         
     def add_platform(self, platform):
         self.platforms.add(platform)
-        # Adds a new platform to the group
         
-    def draw(self, screen):
-        self.platforms.draw(screen)
-        # Renders all platforms (tiles) with a single draw call
+    def draw(self, screen, scroll_x):
+        for platform in self.platforms:
+            platform.draw(screen, scroll_x)
         
     def check_collisions(self, player):
-        collisions = pygame.sprite.spritecollide(player, self.platforms, False)  # Checks for collisions between the player and any platforms in the group.
+        collisions = pygame.sprite.spritecollide(player, self.platforms, False)
         if collisions:
             for platform in collisions:
                 if player.rect.bottom > platform.rect.top:
