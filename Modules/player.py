@@ -6,14 +6,14 @@ MAX_DISPLACEMENT = 600
 
 #arrow class
 class Arrow(pygame.sprite.Sprite):
-    def __init__(self, x, y, direction, aim_angle,speed):
+    def __init__(self, x, y, direction, aim_angle,speed, damage=10):
         super().__init__()
         assets_path = os.path.join(os.path.dirname(__file__), "Assets")
         arrow_path = os.path.join(assets_path, "Arrow_7.png")
         self.image = pygame.image.load(arrow_path).convert_alpha() #this links the image file
         
         self.image = pygame.transform.scale(self.image, (int(self.image.get_width() * 3), int(self.image.get_height() * 1.5)))
-
+        self.damage = damage
         
         self.original_image = self.image #keeps track of original direction of the arrow
         
@@ -44,9 +44,9 @@ class Arrow(pygame.sprite.Sprite):
             
             self.timer += 1/120 # assuming my game will run at 120 fps
             
-            if self.timer > 1: #setting a time limit
-                print(f"Arrow killed - lifespan exceeded {self.timer}")
-                self.kill() #removes the arrow from the existing sprite group
+            #if self.timer > 1: #setting a time limit
+                #print(f"Arrow killed - lifespan exceeded {self.timer}")
+                #self.kill() #removes the arrow from the existing sprite group
                 
             #print(f"Arrow position: {self.rect.topleft}")
 
@@ -74,19 +74,27 @@ class Arrow(pygame.sprite.Sprite):
         pygame.draw.rect(surface, (0, 255, 0), self.rect, 1)  # Green box around the arrow
 
 
+def apply_strength_powerup(player):
+    for arrow in player.arrows:
+        arrow.damage *= 2
 
 
-    
+
 # Player class
 class Player(pygame.sprite.Sprite):
-    def __init__(self, start_pos, screen, max_health,speed):
+    def __init__(self, start_pos, screen, max_health,speed,powerup_group):
         super().__init__()
         self.screen = screen
         self.direction = "right"  # Initial direction of sprite
         self.max_health = max_health
         self.health = self.max_health
         self.equipped_weapon = "bow"
-        self.speed = speed  # Updated the speed for calculating trajectory
+        self.speed = speed# Updated the speed for calculating trajectory
+        self.original_speed = speed
+        self.speed_timer = 5*120
+        self.strength_timer = 0  # Initialize strength timer
+        self.has_strength_powerup = False  # Track if strength power-up is active
+        self.powerup_group = powerup_group
         
         # Keep track of arrow shooting spritesheet:
         self.shooting_timer = 0.0
@@ -260,6 +268,17 @@ class Player(pygame.sprite.Sprite):
         # Draw the trajectory if the player is aiming
         if self.shooting:
             self.draw_trajectory()
+            
+        #handle speed boost timer
+        if self.speed_timer > 0:
+            self.speed_timer -=1
+            if self.speed_timer <= 0:
+                self.speed = self.original_speed
+                
+        powerup_collisions = pygame.sprite.spritecollide(self,self.powerup_group,True)
+        if powerup_collisions:
+            for powerup in powerup_collisions:
+                self.power_up(powerup)
 
 
     # Method to ensure the player collides with the ground
@@ -349,4 +368,56 @@ class Player(pygame.sprite.Sprite):
         if displacement > MAX_DISPLACEMENT:
             displacement = MAX_DISPLACEMENT
         return (displacement / MAX_DISPLACEMENT) * MAX_ARROW_SPEED
+    
 
+        
+                
+    def power_up(self,powerup):
+        powerup.apply_effect(self)
+        
+    def check_powerup_collisions(self):
+        powerup_collisions = pygame.sprite.spritecollide(self, self.powerup_group, True)
+        if powerup_collisions:
+            for powerup in powerup_collisions:
+                self.power_up(powerup)
+        
+                
+    
+
+class PowerUp(pygame.sprite.Sprite):
+    def __init__(self, x, y, powerup_type):
+        super().__init__()
+        self.type = powerup_type
+        powerup_images = {
+            "health": "health_powerup.png",
+            "speed": "speed_powerup.png",
+            "strength": "strength_powerup.png"
+        }
+
+        try:
+            if powerup_type in powerup_images:
+                image_path = os.path.join(os.path.dirname(__file__), "Assets", powerup_images[powerup_type])
+                image = pygame.image.load(image_path).convert_alpha()
+                self.image = pygame.transform.scale(image, (50, 63))
+            else:
+                raise ValueError(f"Unknown power-up type: {powerup_type}")
+        except FileNotFoundError:
+            print(f"Warning: {powerup_images[powerup_type]} not found. Using default image.")
+            self.image = pygame.Surface((20, 20))
+            self.image.fill((255, 255, 0))
+
+        self.rect = self.image.get_rect()
+        self.rect.topleft = (x, y)
+
+    def apply_effect(self, player):
+        if self.type == "health":
+            print("Applying health power-up effect")
+            player.heal(50)
+        elif self.type == "speed":
+            print("Applying speed power-up effect")
+            player.speed += 3
+            player.speed_timer = 5*120
+        elif self.type == "strength":
+            print("Applying strength power-up effect")
+            player.has_strength_powerup = True
+            player.strength_timer = 5*120

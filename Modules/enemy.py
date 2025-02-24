@@ -92,8 +92,8 @@ class Enemy(pygame.sprite.Sprite):
         bar_height = 5
         health_bar_length = bar_width * (self.health / self.max_health)
         
-        pygame.draw.rect(surface, (255, 0, 0), (self.rect.x + scroll_x, self.rect.y - 10, bar_width, bar_height))
-        pygame.draw.rect(surface, (0, 255, 0), (self.rect.x + scroll_x, self.rect.y - 10, health_bar_length, bar_height))
+        pygame.draw.rect(surface, (255, 0, 0), (self.rect.x , self.rect.y - 10, bar_width, bar_height))
+        pygame.draw.rect(surface, (0, 255, 0), (self.rect.x , self.rect.y - 10, health_bar_length, bar_height))
         
     def draw(self, surface, scroll_x):
         surface.blit(self.image, (self.rect.x + scroll_x, self.rect.y))
