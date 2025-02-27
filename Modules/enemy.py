@@ -96,7 +96,7 @@ class Enemy(pygame.sprite.Sprite):
         pygame.draw.rect(surface, (0, 255, 0), (self.rect.x , self.rect.y - 10, health_bar_length, bar_height))
         
     def draw(self, surface, scroll_x):
-        surface.blit(self.image, (self.rect.x + scroll_x, self.rect.y))
+        surface.blit(self.image, (self.rect.x -scroll_x, self.rect.y))
         #pygame.draw.rect(surface, (0, 255, 0), (self.rect.x + scroll_x, self.rect.y, self.rect.width, self.rect.height), 1)
 
     def fade_out(self):

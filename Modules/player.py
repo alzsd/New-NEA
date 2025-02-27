@@ -6,7 +6,7 @@ MAX_DISPLACEMENT = 600
 
 #arrow class
 class Arrow(pygame.sprite.Sprite):
-    def __init__(self, x, y, direction, aim_angle,speed, damage=10):
+    def __init__(self, x, y, direction, aim_angle,speed, damage):
         super().__init__()
         assets_path = os.path.join(os.path.dirname(__file__), "Assets")
         arrow_path = os.path.join(assets_path, "Arrow_7.png")
@@ -54,7 +54,7 @@ class Arrow(pygame.sprite.Sprite):
             for enemy in hit_enemies:
                 print(f"Arrow hit enemy at position: {enemy.rect.topleft}")
                 print(f"Arrow hit enemy at position: {enemy.rect.topleft}, size: {enemy.rect.size}")
-                enemy.take_damage(10)
+                enemy.take_damage(self.damage)
                 self.kill()
                 
             hit_platforms = pygame.sprite.spritecollide(self, platforms, False)
@@ -92,9 +92,10 @@ class Player(pygame.sprite.Sprite):
         self.speed = speed# Updated the speed for calculating trajectory
         self.original_speed = speed
         self.speed_timer = 5*120
-        self.strength_timer = 0  # Initialize strength timer
+        self.strength_timer = 5*120  # Initialize strength timer
         self.has_strength_powerup = False  # Track if strength power-up is active
         self.powerup_group = powerup_group
+        self.damage = 10
         
         # Keep track of arrow shooting spritesheet:
         self.shooting_timer = 0.0
@@ -186,7 +187,9 @@ class Player(pygame.sprite.Sprite):
             print("shooting arrow - !Debug!")
             direction = self.direction
             arrow_speed = self.calculate_arrow_speed(pygame.mouse.get_pos())
-            arrow = Arrow(self.rect.centerx, self.rect.centery, direction, self.aim_angle, arrow_speed)
+            damage = 50 if self.has_strength_powerup else 10  # Double the damage if strength power-up is active
+            print(f"Arrow damage: {damage}")  # Debug
+            arrow = Arrow(self.rect.centerx, self.rect.centery, direction, self.aim_angle, arrow_speed,damage)
             self.arrows.add(arrow)
 
 
@@ -274,6 +277,12 @@ class Player(pygame.sprite.Sprite):
             self.speed_timer -=1
             if self.speed_timer <= 0:
                 self.speed = self.original_speed
+        
+        # Handle strength power-up timer
+        if self.strength_timer > 0:
+            self.strength_timer -= 1
+            if self.strength_timer <= 0:
+                self.has_strength_powerup = False
                 
         powerup_collisions = pygame.sprite.spritecollide(self,self.powerup_group,True)
         if powerup_collisions:
