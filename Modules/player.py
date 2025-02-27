@@ -96,6 +96,8 @@ class Player(pygame.sprite.Sprite):
         self.has_strength_powerup = False  # Track if strength power-up is active
         self.powerup_group = powerup_group
         self.damage = 10
+        self.is_invincible = False  # Add invincibility attribute
+        self.invincible_timer = 0  # Add invincibility timer attribute
         
         # Keep track of arrow shooting spritesheet:
         self.shooting_timer = 0.0
@@ -284,6 +286,12 @@ class Player(pygame.sprite.Sprite):
             if self.strength_timer <= 0:
                 self.has_strength_powerup = False
                 
+        # Handle invincibility timer
+        if self.invincible_timer > 0:
+            self.invincible_timer -= 1
+            if self.invincible_timer <= 0:
+                self.is_invincible = False
+                
         powerup_collisions = pygame.sprite.spritecollide(self,self.powerup_group,True)
         if powerup_collisions:
             for powerup in powerup_collisions:
@@ -312,7 +320,7 @@ class Player(pygame.sprite.Sprite):
         self.x_vel = 0
 
     def take_damage(self, amount):
-        if self.damage_cooldown == 0:  # Check if cooldown is zero
+        if self.damage_cooldown == 0 and not self.is_invincible:  # Check if cooldown is zero
             print(f"Taking damage -{amount}")  # Debug line
             self.health -= amount
             self.damage_cooldown = self.damage_cooldown_duration  # Reset cooldown
@@ -396,11 +404,14 @@ class Player(pygame.sprite.Sprite):
 class PowerUp(pygame.sprite.Sprite):
     def __init__(self, x, y, powerup_type):
         super().__init__()
+        self.original_x = x
+        self.original_y = y
         self.type = powerup_type
         powerup_images = {
             "health": "health_powerup.png",
             "speed": "speed_powerup.png",
-            "strength": "strength_powerup.png"
+            "strength": "strength_powerup.png",
+            "godmode": "defense_powerup.png"
         }
 
         try:
@@ -417,6 +428,7 @@ class PowerUp(pygame.sprite.Sprite):
 
         self.rect = self.image.get_rect()
         self.rect.topleft = (x, y)
+        
 
     def apply_effect(self, player):
         if self.type == "health":
@@ -430,3 +442,14 @@ class PowerUp(pygame.sprite.Sprite):
             print("Applying strength power-up effect")
             player.has_strength_powerup = True
             player.strength_timer = 5*120
+        elif self.type == "godmode":  # Handle defense power-up
+            player.is_invincible = True
+            player.invincible_timer = 5 * 120  # 5 seconds at 120 FPS
+
+    def update(self,scroll_x):
+        # Positioning with respect to world coordinates
+        self.rect.x = self.original_x + scroll_x
+        self.rect.y = self.original_y
+        
+    def draw(self,surface):
+        surface.blit(self.image, self.rect)

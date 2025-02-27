@@ -114,6 +114,7 @@ def main():
     powerup_group.add(PowerUp(400, screen.get_height() - 130, "health"))
     powerup_group.add(PowerUp(500, screen.get_height() - 360, "speed"))
     powerup_group.add(PowerUp(700, screen.get_height() - 130, "strength"))
+    powerup_group.add(PowerUp(2000, screen.get_height() - 130, "godmode"))
 
     player = start_level(current_level, screen, difficulty, powerup_group)  # Pass powerup_group
     character_sprites = pygame.sprite.Group()
@@ -122,7 +123,9 @@ def main():
     # Creating and adding enemies
     enemies = pygame.sprite.Group()
     enemy = Enemy(300, 930)  # Enemy spawns at the player's starting position
+    enemy2 = Enemy(1000, 930)
     enemies.add(enemy)
+    enemies.add(enemy2)
 
     running = True
     while running:
@@ -144,6 +147,11 @@ def main():
         character_sprites.update(enemies, test_level.platforms, screen.get_width(), screen.get_height(), scroll_x)
         for enemy in enemies:
             enemy.update(test_level.platforms, player, scroll_x)
+            enemy.draw(screen, scroll_x)
+
+        for powerup in powerup_group:
+            powerup.update(scroll_x)
+            powerup.draw(screen)
 
         # Check for collisions between player and platforms
         test_level.check_collisions(player)
