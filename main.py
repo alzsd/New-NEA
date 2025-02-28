@@ -80,7 +80,7 @@ def start_level(level_name, screen, difficulty, powerup_group):
     player = Player(start_pos, screen, max_health, speed, powerup_group)
     return player
 
-# Main initializer
+# Main initialiser
 def main():
     pygame.init()
     screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
@@ -145,10 +145,10 @@ def main():
 
         # Update sprites with scroll_x
         character_sprites.update(enemies, test_level.platforms, screen.get_width(), screen.get_height(), scroll_x)
+        
         for enemy in enemies:
             enemy.update(test_level.platforms, player, scroll_x)
             enemy.draw(screen, scroll_x)
-
         for powerup in powerup_group:
             powerup.update(scroll_x)
             powerup.draw(screen)

@@ -110,7 +110,6 @@ class Player(pygame.sprite.Sprite):
         self.last_shot_time = 0.0
         self.shooting = False  # This merely tracks the shooting state!
         self.trajectory = []  # To store the trajectory points
-        
         # Defining the path to the assets folder
         assets_path = os.path.join(os.path.dirname(__file__), "Assets")
        
