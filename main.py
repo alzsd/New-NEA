@@ -4,6 +4,8 @@ import math
 import time
 from Modules import Player, Platform, Level, Arrow, Enemy, PowerUp
 
+
+
 # Global variables/constants
 speed = 3
 WORLD_WIDTH = 4000  # May change
@@ -119,7 +121,45 @@ def render_pause_menu(screen, formatted_time):
 
     return resume_button_rect, settings_button_rect, quit_button_rect
 
+def render_settings_menu(screen, background_image, from_pause_menu):
+    screen_width, screen_height = screen.get_size()
+    
+    # Draw the background image
+    screen.blit(background_image, (0, 0))
+    
+    # Add text and buttons
+    font = pygame.font.Font(None, 74)
+    small_font = pygame.font.Font(None, 50)
+    
+    settings_text = font.render("Settings", True, (255, 255, 255))
+    controls_text = small_font.render("Controls:", True, (255, 255, 255))
+    move_right_text = small_font.render("D / Right Arrow: Move Right", True, (255, 255, 255))
+    move_left_text = small_font.render("A / Left Arrow: Move Left", True, (255, 255, 255))
+    jump_text = small_font.render("Space / Up Arrow: Jump", True, (255, 255, 255))
+    pause_text = small_font.render("ESC: Pause", True, (255, 255, 255))
 
+    # Calculate positions
+    settings_x = screen_width - settings_text.get_width() - 20
+    settings_y = 20
+    controls_y_start = 200
+    controls_x = 20
+
+    # Render text
+    screen.blit(settings_text, (settings_x, settings_y))
+    screen.blit(controls_text, (controls_x, controls_y_start))
+    screen.blit(move_right_text, (controls_x, controls_y_start + 50))
+    screen.blit(move_left_text, (controls_x, controls_y_start + 100))
+    screen.blit(jump_text, (controls_x, controls_y_start + 150))
+    screen.blit(pause_text, (controls_x, controls_y_start + 200))
+
+    # Draw the back button (curved arrow)
+    back_button_text = small_font.render("<-", True, (255, 255, 255))
+    back_button_rect = back_button_text.get_rect(bottomright=(screen_width - 20, screen_height - 20))
+    screen.blit(back_button_text, back_button_rect.topleft)
+
+    pygame.display.flip()
+
+    return back_button_rect
 
 # Main initialiser
 def main():
@@ -127,8 +167,10 @@ def main():
     screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
     clock = pygame.time.Clock()
 
-    # Load the background image
+    # Load the background images
     background_image = pygame.image.load("BG1.jpg").convert()
+    settings_background_image = pygame.image.load("BG2.jpg").convert()
+    settings_background_image = pygame.transform.scale(settings_background_image, (1920, 1080))
 
     # Define the world width for the extended game map
     WORLD_WIDTH = 5000
@@ -168,6 +210,7 @@ def main():
 
     running = True
     paused = False
+    in_settings = False
     start_time = time.time()  # Initialize start time
     paused_start_time = 0
     total_paused_duration = 0
@@ -182,26 +225,34 @@ def main():
                 running = False
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
-                    paused = not paused
-                    if paused:
-                        paused_start_time = time.time()
+                    if in_settings:
+                        in_settings = False
                     else:
-                        total_paused_duration += time.time() - paused_start_time
-                
+                        paused = not paused
+                        if paused:
+                            paused_start_time = time.time()
+                        else:
+                            total_paused_duration += time.time() - paused_start_time
+
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                if paused:
-                    mouse_pos = pygame.mouse.get_pos()
+                mouse_pos = pygame.mouse.get_pos()
+                if paused and not in_settings:
                     if resume_button_rect.collidepoint(mouse_pos):
                         paused = False
                         total_paused_duration += time.time() - paused_start_time
                     elif settings_button_rect.collidepoint(mouse_pos):
-                        print("Settings button clicked")
+                        in_settings = True
                     elif quit_button_rect.collidepoint(mouse_pos):
                         running = False
+
+                if in_settings:
+                    back_button_rect = render_settings_menu(screen, settings_background_image, True)
+                    if back_button_rect.collidepoint(mouse_pos):
+                        in_settings = False
                 
                 print(f"Mouse button {event.button} pressed at {event.pos}")
 
-        if not paused:
+        if not paused and not in_settings:
             handle_input(player)
             
             scroll_x = -player.rect.centerx + screen.get_width() // 2
@@ -244,10 +295,13 @@ def main():
             clock.tick(120)
             time_spent = time.time() - start_time - total_paused_duration
             formatted_time = time.strftime("%M:%S", time.gmtime(time_spent))
-        else:
+        elif paused and not in_settings:
             resume_button_rect, settings_button_rect, quit_button_rect = render_pause_menu(screen, formatted_time)
+        elif in_settings:
+            back_button_rect = render_settings_menu(screen, settings_background_image, True)
 
     pygame.quit()
+
 
 if __name__ == "__main__":
     main()
