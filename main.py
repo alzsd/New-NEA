@@ -1,14 +1,8 @@
-# Libraries
 import pygame
 import os
 import math
-from Modules import Player
-from Modules import Platform
-from Modules import Level
-from Modules import Arrow
-from Modules import Enemy
-from Modules import PowerUp
-
+import time
+from Modules import Player, Platform, Level, Arrow, Enemy, PowerUp
 
 # Global variables/constants
 speed = 3
@@ -80,6 +74,53 @@ def start_level(level_name, screen, difficulty, powerup_group):
     player = Player(start_pos, screen, max_health, speed, powerup_group)
     return player
 
+def draw_rounded_rect(screen, color, rect, corner_radius):
+    """
+    Draw a rounded rectangle.
+    """
+    pygame.draw.rect(screen, color, rect, border_radius=corner_radius)
+
+def render_pause_menu(screen, formatted_time):
+    screen_width, screen_height = screen.get_size()
+    
+    menu_width = 7 * 96
+    menu_height = 6 * 96
+    menu_x = (screen_width - menu_width) // 2
+    menu_y = (screen_height - menu_height) // 2
+    
+    shadow_color = (0, 0, 0, 100)
+    shadow_rect = pygame.Rect(menu_x + 10, menu_y + 10, menu_width, menu_height)
+    pygame.draw.rect(screen, shadow_color, shadow_rect, border_radius=20)
+    
+    menu_color = (50, 50, 50)
+    menu_rect = pygame.Rect(menu_x, menu_y, menu_width, menu_height)
+    draw_rounded_rect(screen, menu_color, menu_rect, corner_radius=20)
+    
+    font = pygame.font.Font(None, 74)
+    small_font = pygame.font.Font(None, 50)
+    
+    pause_text = font.render("Paused", True, (255, 255, 255))
+    time_text = small_font.render(f"Time spent: {formatted_time}", True, (255, 255, 255))
+    resume_text = font.render("Resume", True, (255, 255, 255))
+    settings_text = font.render("Settings", True, (255, 255, 255))
+    quit_text = font.render("Quit", True, (255, 255, 255))
+    
+    resume_button_rect = resume_text.get_rect(center=(menu_x + menu_width // 2, menu_y + 200))
+    settings_button_rect = settings_text.get_rect(center=(menu_x + menu_width // 2, menu_y + 300))
+    quit_button_rect = quit_text.get_rect(center=(menu_x + menu_width // 2, menu_y + 400))
+    
+    screen.blit(pause_text, (menu_x + 20, menu_y + 20))
+    screen.blit(time_text, (menu_x + menu_width - time_text.get_width() - 20, menu_y + 20))
+    screen.blit(resume_text, resume_button_rect.topleft)
+    screen.blit(settings_text, settings_button_rect.topleft)
+    screen.blit(quit_text, quit_button_rect.topleft)
+
+    pygame.display.flip()
+
+    return resume_button_rect, settings_button_rect, quit_button_rect
+
+
+
 # Main initialiser
 def main():
     pygame.init()
@@ -91,8 +132,6 @@ def main():
 
     # Define the world width for the extended game map
     WORLD_WIDTH = 5000
-
-    # Set the difficulty level
     difficulty = "medium"
 
     # Create the test level
@@ -116,72 +155,97 @@ def main():
     powerup_group.add(PowerUp(700, screen.get_height() - 130, "strength"))
     powerup_group.add(PowerUp(2000, screen.get_height() - 130, "godmode"))
 
-    player = start_level(current_level, screen, difficulty, powerup_group)  # Pass powerup_group
+    player = start_level(current_level, screen, difficulty, powerup_group)
     character_sprites = pygame.sprite.Group()
     character_sprites.add(player)
 
     # Creating and adding enemies
     enemies = pygame.sprite.Group()
-    enemy = Enemy(300, 930)  # Enemy spawns at the player's starting position
+    enemy = Enemy(300, 930)
     enemy2 = Enemy(1000, 930)
     enemies.add(enemy)
     enemies.add(enemy2)
 
     running = True
+    paused = False
+    start_time = time.time()  # Initialize start time
+    paused_start_time = 0
+    total_paused_duration = 0
+    
+    resume_button_rect = pygame.Rect(0, 0, 1, 1)
+    settings_button_rect = pygame.Rect(0, 0, 1, 1)
+    quit_button_rect = pygame.Rect(0, 0, 1, 1)
+
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                running = False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    paused = not paused
+                    if paused:
+                        paused_start_time = time.time()
+                    else:
+                        total_paused_duration += time.time() - paused_start_time
+                
             elif event.type == pygame.MOUSEBUTTONDOWN:
+                if paused:
+                    mouse_pos = pygame.mouse.get_pos()
+                    if resume_button_rect.collidepoint(mouse_pos):
+                        paused = False
+                        total_paused_duration += time.time() - paused_start_time
+                    elif settings_button_rect.collidepoint(mouse_pos):
+                        print("Settings button clicked")
+                    elif quit_button_rect.collidepoint(mouse_pos):
+                        running = False
+                
                 print(f"Mouse button {event.button} pressed at {event.pos}")
 
-        handle_input(player)
-        
-        # Calculate the offset for scrolling
-        scroll_x = -player.rect.centerx + screen.get_width() // 2
-        scroll_x = max(-(WORLD_WIDTH - screen.get_width()), min(0, scroll_x))
+        if not paused:
+            handle_input(player)
+            
+            scroll_x = -player.rect.centerx + screen.get_width() // 2
+            scroll_x = max(-(WORLD_WIDTH - screen.get_width()), min(0, scroll_x))
+            
+            character_sprites.update(enemies, test_level.platforms, screen.get_width(), screen.get_height(), scroll_x)
+            
+            for enemy in enemies:
+                enemy.update(test_level.platforms, player, scroll_x)
+                enemy.draw(screen, scroll_x)
+            for powerup in powerup_group:
+                powerup.update(scroll_x)
+                powerup.draw(screen)
+            for platform in test_level.platforms:
+                platform.update(scroll_x)
+                platform.draw(screen)
 
-        # Update sprites with scroll_x
-        character_sprites.update(enemies, test_level.platforms, screen.get_width(), screen.get_height(), scroll_x)
-        
-        for enemy in enemies:
-            enemy.update(test_level.platforms, player, scroll_x)
-            enemy.draw(screen, scroll_x)
-        for powerup in powerup_group:
-            powerup.update(scroll_x)
-            powerup.draw(screen)
+            test_level.check_collisions(player)
 
-        # Check for collisions between player and platforms
-        test_level.check_collisions(player)
+            if pygame.sprite.spritecollideany(player, enemies):
+                player.take_damage(10)
 
-        # Check for collisions between player and enemies
-        if pygame.sprite.spritecollideany(player, enemies):
-            player.take_damage(10)
+            player.check_powerup_collisions()
+            
+            screen.blit(background_image, (0, 0))
+            test_level.draw(screen, scroll_x)
+            character_sprites.draw(screen)
+            enemies.draw(screen)
+            powerup_group.draw(screen)
+            
+            for enemy in enemies:
+                enemy.draw_health_bar(screen, scroll_x)
 
-        # Check for collisions between player and power-ups
-        player.check_powerup_collisions()
-
-        # Draw the background image
-        screen.blit(background_image, (0, 0))
-
-        # Draw game elements with scroll_x
-        test_level.draw(screen, scroll_x)
-        character_sprites.draw(screen)
-        enemies.draw(screen)
-        powerup_group.draw(screen)
-        
-        for enemy in enemies:
-            enemy.draw_health_bar(screen, scroll_x)
-
-        player.draw_trajectory()  # Pass scroll_x only
-        player.arrows.draw(screen)
-        player.draw_health_bar(screen)
-        player.draw_health_text(screen)
-        
-        pygame.display.flip()
-        clock.tick(120)
+            player.draw_trajectory()
+            player.arrows.draw(screen)
+            player.draw_health_bar(screen)
+            player.draw_health_text(screen)
+            
+            pygame.display.flip()
+            clock.tick(120)
+            time_spent = time.time() - start_time - total_paused_duration
+            formatted_time = time.strftime("%M:%S", time.gmtime(time_spent))
+        else:
+            resume_button_rect, settings_button_rect, quit_button_rect = render_pause_menu(screen, formatted_time)
 
     pygame.quit()
 

@@ -120,3 +120,4 @@ class Enemy(pygame.sprite.Sprite):
     def patrol(self):
         if self.rect.x >= self.patrol_limits[1] or self.rect.x <= self.patrol_limits[0]:
             self.x_vel = -self.x_vel  # Change direction
+            

@@ -11,8 +11,10 @@ class Level:
         self.platforms.add(platform)
         
     def draw(self, screen, scroll_x):
+        # Draw each platform with scroll_x consideration
         for platform in self.platforms:
-            platform.draw(screen, scroll_x)
+            platform.update(scroll_x)  # Update rect positions
+            platform.draw(screen)      # Draw without scroll_x parameter
         
     def check_collisions(self, player):
         collisions = pygame.sprite.spritecollide(player, self.platforms, False)
