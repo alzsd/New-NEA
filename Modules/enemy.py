@@ -1,5 +1,6 @@
 import pygame
 import os
+import math
 
 class Enemy(pygame.sprite.Sprite):
     def __init__(self, x, y):
@@ -37,12 +38,19 @@ class Enemy(pygame.sprite.Sprite):
         self.jump_interval = 120  # Number of frames between jumps
         self.jump_timer = self.jump_interval
 
-
+        # Load sound effects
+        self.move_sound = pygame.mixer.Sound("enemy move.wav")
+        self.death_sound = pygame.mixer.Sound("enemy die.wav")
+        self.take_damage_sound = pygame.mixer.Sound("enemy damaged.wav")
+        
+        # Sound flags
+        self.move_sound_playing = False
+        self.death_sound_playing = False
+        self.take_damage_sound_playing = False
 
     def update(self, platforms, player, scroll_x):
         if not self.is_dying:
             if abs(self.world_x - player.rect.x) <= self.patrol_range + 50:
-                self.jump()
                 self.pursue_player(player)
             else:
                 self.patrol()
@@ -53,6 +61,27 @@ class Enemy(pygame.sprite.Sprite):
             self.y_vel += self.gravity
 
             self.check_platform_collisions(platforms)
+
+            # Calculate distance to the player
+            player_pos = player.rect.center
+            enemy_pos = self.rect.center
+            distance = math.sqrt((player_pos[0] - enemy_pos[0]) ** 2 + (player_pos[1] - enemy_pos[1]) ** 2)
+
+            # Adjust volume based on distance (simple linear function)
+            scaling_factor = 0.3
+            max_distance = 800  # Maximum distance for hearing the sound
+            volume = max(0, min(1, 1 - (distance / max_distance))) * scaling_factor
+            self.move_sound.set_volume(volume)
+            self.death_sound.set_volume(volume)
+            self.take_damage_sound.set_volume(volume)
+
+            # Play movement sound periodically
+            if self.rect.x % 100 == 0 and not self.move_sound_playing:
+                self.move_sound.play()
+                self.move_sound_playing = True
+            elif self.rect.x % 100 != 0:
+                self.move_sound_playing = False
+
         else:
             self.fade_out()
 
@@ -70,6 +99,9 @@ class Enemy(pygame.sprite.Sprite):
 
     def take_damage(self, amount):
         self.health -= amount
+        if not self.take_damage_sound_playing:
+            self.take_damage_sound.play()
+            self.take_damage_sound_playing = True
         if self.health <= 0:
             self.health = 0
             self.start_dying()
@@ -78,11 +110,14 @@ class Enemy(pygame.sprite.Sprite):
         self.is_dying = True
         self.image = self.death_sprite_sheet
         self.alpha = 255
+        if not self.death_sound_playing:
+            self.death_sound.play()
+            self.death_sound_playing = True
             
     def draw(self, surface, scroll_x):
         # Draw enemy based on world position relative to scroll
         surface.blit(self.image, (self.world_x - scroll_x, self.world_y))
-        self.draw_health_bar(surface,scroll_x)
+        self.draw_health_bar(surface, scroll_x)
 
     def draw_health_bar(self, surface, scroll_x):
         bar_width = 100

@@ -4,6 +4,27 @@ import math
 import time
 from Modules import Player, Platform, Level, Arrow, Enemy, PowerUp
 
+#sound effects
+pygame.mixer.init()
+#loading sound effects
+player_powerup_sound = pygame.mixer.Sound("powerup.mp3")
+#player_aimbow_sound = pygame.mixer.Sound("aim bow.mp3")
+player_shoot_sound = pygame.mixer.Sound("shoot bow.mp3")
+player_running = pygame.mixer.Sound("running.mp3")
+player_running.set_volume(0.2)
+ambience = pygame.mixer.Sound("ambience.mp3")
+Player_jump = pygame.mixer.Sound("jump.wav")
+Player_jump.set_volume(0.2)
+damage = pygame.mixer.Sound("damage.wav")
+damage.set_volume(0.5)
+arrow_platform = pygame.mixer.Sound("arrow hits platform.wav")
+arrow_platform.set_volume(0.4)
+menu_sound = pygame.mixer.Sound("menu_sound.wav")
+
+enemy_move_sound = pygame.mixer.Sound("enemy move.wav")
+enemy_death_sound = pygame.mixer.Sound("enemy die.wav")
+enemy_take_damage_sound = pygame.mixer.Sound("enemy damaged.wav")
+
 
 
 # Global variables/constants
@@ -11,6 +32,11 @@ speed = 3
 WORLD_WIDTH = 4000  # May change
 player_start_x = 50
 player_start_y = 300
+
+running_sound_playing = False
+jumping_sound_playing = False
+arrow_sound_playing = False
+menu_sound_playing = False
 
 # Dictionaries for start positions
 start_positions = {
@@ -21,6 +47,8 @@ start_positions = {
 
 # Handle input function
 def handle_input(player):
+    global running_sound_playing, jumping_sound_playing  # Ensure access to the global variables
+
     keys = pygame.key.get_pressed()
     mouse_buttons = pygame.mouse.get_pressed()
     mouse_pos = pygame.mouse.get_pos()  # Get the current mouse position    
@@ -28,16 +56,39 @@ def handle_input(player):
     # Disable movement if the player is shooting
     if player.shooting:
         player.stop()  # Ensure the player stops moving when shooting
+        if running_sound_playing:
+            player_running.stop()
+            running_sound_playing = False
+        if jumping_sound_playing:
+            Player_jump.stop()
+            jumping_sound_playing = False
     else:
         player.x_vel = 0
         if keys[pygame.K_LEFT] or keys[pygame.K_a]:
+            if not running_sound_playing:
+                player_running.play(-1)  # Loop the sound
+                running_sound_playing = True
             player.move_left(player.speed)
         elif keys[pygame.K_RIGHT] or keys[pygame.K_d]:
+            if not running_sound_playing:
+                player_running.play(-1)  # Loop the sound
+                running_sound_playing = True
             player.move_right(player.speed)
+        else:
+            if running_sound_playing:
+                player_running.stop()
+                running_sound_playing = False
         
         # Handle jumping independently of movement
         if keys[pygame.K_SPACE] or keys[pygame.K_UP]:
+            if not jumping_sound_playing:
+                Player_jump.play()
+                jumping_sound_playing = True
             player.jump()
+        else:
+            if jumping_sound_playing:
+                Player_jump.stop()
+                jumping_sound_playing = False
         
         if keys[pygame.K_2]:
             player.equipped_weapon = "bow"
@@ -57,10 +108,10 @@ def handle_input(player):
     elif not mouse_buttons[0] and player.shooting:
         print(f"Mouse button released. Equipped weapon: {player.equipped_weapon}")  # Debug line
         if player.equipped_weapon == "bow":
-            player.shoot_arrow()
+            player.shoot_arrow(player_shoot_sound)
         player.shooting = False
         player.clear_trajectory()  # removes trajectory
-
+        
 # Start level function
 def start_level(level_name, screen, difficulty, powerup_group):
     start_pos = start_positions[level_name]
@@ -166,7 +217,11 @@ def main():
     pygame.init()
     screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
     clock = pygame.time.Clock()
-
+    #play ambience in a loop.
+    ambience.play(-1)
+    ambience.set_volume(0.3)
+    global menu_sound_playing
+    
     # Load the background images
     background_image = pygame.image.load("BG1.jpg").convert()
     settings_background_image = pygame.image.load("BG2.jpg").convert()
@@ -258,7 +313,7 @@ def main():
             scroll_x = -player.rect.centerx + screen.get_width() // 2
             scroll_x = max(-(WORLD_WIDTH - screen.get_width()), min(0, scroll_x))
             
-            character_sprites.update(enemies, test_level.platforms, screen.get_width(), screen.get_height(), scroll_x)
+            character_sprites.update(enemies, test_level.platforms, screen.get_width(), screen.get_height(), scroll_x,player_powerup_sound,arrow_platform)
             
             for enemy in enemies:
                 enemy.update(test_level.platforms, player, scroll_x)
@@ -273,7 +328,7 @@ def main():
             test_level.check_collisions(player)
 
             if pygame.sprite.spritecollideany(player, enemies):
-                player.take_damage(10)
+                player.take_damage(10,damage)
 
             player.check_powerup_collisions()
             
@@ -298,6 +353,7 @@ def main():
         elif paused and not in_settings:
             resume_button_rect, settings_button_rect, quit_button_rect = render_pause_menu(screen, formatted_time)
         elif in_settings:
+            paused = False
             back_button_rect = render_settings_menu(screen, settings_background_image, True)
 
     pygame.quit()

@@ -6,69 +6,68 @@ MAX_DISPLACEMENT = 600
 
 #arrow class
 class Arrow(pygame.sprite.Sprite):
-    def __init__(self, x, y, direction, aim_angle,speed, damage):
+    arrow_sound_playing = False  # Class variable to track the arrow sound state
+
+    def __init__(self, x, y, direction, aim_angle, speed, damage):
         super().__init__()
         assets_path = os.path.join(os.path.dirname(__file__), "Assets")
         arrow_path = os.path.join(assets_path, "Arrow_7.png")
-        self.image = pygame.image.load(arrow_path).convert_alpha() #this links the image file
+        self.image = pygame.image.load(arrow_path).convert_alpha()  # This links the image file
         
         self.image = pygame.transform.scale(self.image, (int(self.image.get_width() * 3), int(self.image.get_height() * 1.5)))
         self.damage = damage
         
-        self.original_image = self.image #keeps track of original direction of the arrow
+        self.original_image = self.image  # Keeps track of original direction of the arrow
         
-        self.rect = self.image.get_rect(center = (x, y))
+        self.rect = self.image.get_rect(center=(x, y))
         self.aim_angle = aim_angle
         self.speed = speed
         
         self.direction = direction
         self.x_vel = self.speed * math.cos(self.aim_angle)
-        self.y_vel = self.speed * math.sin(self.aim_angle) #initial velocity acting upwards
+        self.y_vel = self.speed * math.sin(self.aim_angle)  # Initial velocity acting upwards
         self.gravity = 0.2
         
         self.timer = 0  # Initialise a timer to track arrow lifespan
         self.stuck = False  # Flag to check if the arrow is stuck
         self.alpha = 255  # Opacity for fading
-        
-        
-    def update(self, enemies, platforms, screen_width, screen_height):
+
+    def update(self, enemies, platforms, screen_width, screen_height, arrow_platform):
         if not self.stuck:
-            self.y_vel += self.gravity #simulates gravitational acceleration
+            self.y_vel += self.gravity  # Simulates gravitational acceleration
             self.rect.x += self.x_vel
-            self.rect.y += self.y_vel #changes the next position of the rect
+            self.rect.y += self.y_vel  # Changes the next position of the rect
             
-            #rotating the image based on its resultant velocity
+            # Rotating the image based on its resultant velocity
             angle = math.degrees(math.atan2(-self.y_vel, self.x_vel))
             self.image = pygame.transform.rotate(self.original_image, angle)
-            self.rect = self.image.get_rect(center = self.rect.center)
+            self.rect = self.image.get_rect(center=self.rect.center)
             
-            self.timer += 1/120 # assuming my game will run at 120 fps
+            self.timer += 1 / 120  # Assuming my game will run at 120 fps
             
-            #if self.timer > 1: #setting a time limit
-                #print(f"Arrow killed - lifespan exceeded {self.timer}")
-                #self.kill() #removes the arrow from the existing sprite group
-                
-            #print(f"Arrow position: {self.rect.topleft}")
-
             hit_enemies = pygame.sprite.spritecollide(self, enemies, False)
             for enemy in hit_enemies:
                 print(f"Arrow hit enemy at position: {enemy.rect.topleft}")
-                print(f"Arrow hit enemy at position: {enemy.rect.topleft}, size: {enemy.rect.size}")
                 enemy.take_damage(self.damage)
                 self.kill()
                 
             hit_platforms = pygame.sprite.spritecollide(self, platforms, False)
             if hit_platforms or self.rect.left < 0 or self.rect.right > screen_width or self.rect.top < 0 or self.rect.bottom > screen_height:
                 self.stuck = True
-        
         else:
+            # Play arrow hit platform sound if not already playing
+            if not Arrow.arrow_sound_playing:
+                arrow_platform.play()
+                Arrow.arrow_sound_playing = True
+            
             # Fade away
             self.alpha -= 5  # Adjust fading speed as needed
             if self.alpha <= 0:
                 self.kill()
+                Arrow.arrow_sound_playing = False  # Reset the flag when the arrow is removed
             else:
                 self.image.set_alpha(self.alpha)
-
+                
     def draw(self, surface):
         surface.blit(self.image, self.rect)
         pygame.draw.rect(surface, (0, 255, 0), self.rect, 1)  # Green box around the arrow
@@ -156,6 +155,7 @@ class Player(pygame.sprite.Sprite):
 
         # Arrow group
         self.arrows = pygame.sprite.Group()
+
         
     def draw(self, screen, scroll_x):
         screen.blit(self.image, (self.rect.x + scroll_x, self.rect.y))
@@ -183,8 +183,9 @@ class Player(pygame.sprite.Sprite):
             self.shooting = True  # Set to True when attack starts
             self.current_frames = self.bow_frames
 
-    def shoot_arrow(self):
+    def shoot_arrow(self,player_shoot_sound):
         if self.equipped_weapon == "bow":
+            player_shoot_sound.play()
             print("shooting arrow - !Debug!")
             direction = self.direction
             arrow_speed = self.calculate_arrow_speed(pygame.mouse.get_pos())
@@ -216,7 +217,7 @@ class Player(pygame.sprite.Sprite):
 
 
 
-    def update(self, enemies, platforms, screen_width, screen_height, scroll_x):
+    def update(self, enemies, platforms, screen_width, screen_height, scroll_x,player_powerup_sound,arrow_platform):
         self.rect.x += self.x_vel
         self.rect.y += self.y_vel
         self.y_vel += self.gravity
@@ -226,7 +227,7 @@ class Player(pygame.sprite.Sprite):
             self.damage_cooldown -= 1
         
         # Ensure the arrows update with the new arguments
-        self.arrows.update(enemies, platforms, screen_width, screen_height)
+        self.arrows.update(enemies, platforms, screen_width, screen_height,arrow_platform)
         
         if self.shooting:
             self.shooting_timer -= 1 / 120  # Assuming 120 FPS
@@ -294,6 +295,7 @@ class Player(pygame.sprite.Sprite):
         powerup_collisions = pygame.sprite.spritecollide(self,self.powerup_group,True)
         if powerup_collisions:
             for powerup in powerup_collisions:
+                player_powerup_sound.play()
                 self.power_up(powerup)
 
 
@@ -307,8 +309,10 @@ class Player(pygame.sprite.Sprite):
     def move_left(self, speed):
         self.x_vel = -speed
 
+
     def move_right(self, speed):
         self.x_vel = speed
+
 
     def jump(self):
         if not self.is_jumping:
@@ -318,9 +322,11 @@ class Player(pygame.sprite.Sprite):
     def stop(self):
         self.x_vel = 0
 
-    def take_damage(self, amount):
+    def take_damage(self, amount,damage):
+        
         if self.damage_cooldown == 0 and not self.is_invincible:  # Check if cooldown is zero
             print(f"Taking damage -{amount}")  # Debug line
+            damage.play()
             self.health -= amount
             self.damage_cooldown = self.damage_cooldown_duration  # Reset cooldown
             if self.health <= 0:
@@ -353,6 +359,7 @@ class Player(pygame.sprite.Sprite):
         
         
     def aim_bow(self, mouse_pos):
+        #player_aimbow_sound.play()
         dx = mouse_pos[0] - self.rect.centerx
         dy = mouse_pos[1] - self.rect.centery
         self.aim_angle = math.atan2(dy, dx)
