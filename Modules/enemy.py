@@ -89,14 +89,36 @@ class Enemy(pygame.sprite.Sprite):
         self.rect.x = self.world_x + scroll_x
         self.rect.y = self.world_y
                     
+
+
     def check_platform_collisions(self, platforms):
         collisions = pygame.sprite.spritecollide(self, platforms, False)
-        if collisions:
-            for platform in collisions:
-                if self.rect.bottom > platform.rect.top:
+        
+        for platform in collisions:
+            # Handle vertical collisions
+            if self.y_vel > 0:  # Falling down
+                if self.rect.bottom > platform.rect.top and self.rect.bottom - self.y_vel <= platform.rect.top:
                     self.rect.bottom = platform.rect.top
+                    self.world_y = self.rect.y
+                    self.y_vel = 0
+            elif self.y_vel < 0:  # Jumping up
+                if self.rect.top < platform.rect.bottom and self.rect.top - self.y_vel >= platform.rect.bottom:
+                    self.rect.top = platform.rect.bottom
+                    self.world_y = self.rect.y
                     self.y_vel = 0
 
+            # Handle horizontal collisions
+            if self.x_vel > 0:  # Moving right
+                if self.rect.right > platform.rect.left and self.rect.right - self.x_vel <= platform.rect.left:
+                    self.rect.right = platform.rect.left
+                    self.world_x = self.rect.x
+                    self.x_vel = 0
+            elif self.x_vel < 0:  # Moving left
+                if self.rect.left < platform.rect.right and self.rect.left - self.x_vel >= platform.rect.right:
+                    self.rect.left = platform.rect.right
+                    self.world_x = self.rect.x
+                    self.x_vel = 0
+                    
     def take_damage(self, amount):
         self.health -= amount
         if not self.take_damage_sound_playing:
