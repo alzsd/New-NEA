@@ -10,6 +10,10 @@ class Level:
     def add_platform(self, platform):
         self.platforms.add(platform)
         
+    def update(self, scroll_x):
+        for platform in self.platforms:
+            platform.update(scroll_x)
+            
     def draw(self, screen, scroll_x):
         # Draw each platform with scroll_x consideration
         for platform in self.platforms:
