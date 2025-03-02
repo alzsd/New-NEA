@@ -3,6 +3,7 @@ import os
 import math
 import time
 from Modules import Player, Platform, Level, Arrow, Enemy, PowerUp
+from pygame import gfxdraw
 
 #sound effects
 pygame.mixer.init()
@@ -241,7 +242,97 @@ def render_settings_menu(screen, background_image, ambience_music_volume, sfx_vo
     return back_button_rect, pygame.Rect(50, 650, 300, 20), pygame.Rect(50, 800, 300, 20)
 
 
+def draw_rounded_button(screen, rect, color, radius, shadow_offset=5):
+    x, y, width, height = rect
 
+    # Draw shadow
+    shadow_color = (0, 0, 0)
+    shadow_rect = (x + shadow_offset, y + shadow_offset, width, height)
+    pygame.gfxdraw.filled_polygon(screen, [
+        (shadow_rect[0], shadow_rect[1] + radius),
+        (shadow_rect[0], shadow_rect[1] + height - radius),
+        (shadow_rect[0] + radius, shadow_rect[1] + height),
+        (shadow_rect[0] + width - radius, shadow_rect[1] + height),
+        (shadow_rect[0] + width, shadow_rect[1] + height - radius),
+        (shadow_rect[0] + width, shadow_rect[1] + radius),
+        (shadow_rect[0] + width - radius, shadow_rect[1]),
+        (shadow_rect[0] + radius, shadow_rect[1]),
+    ], shadow_color)
+    
+    # Draw button
+    pygame.gfxdraw.filled_polygon(screen, [
+        (x, y + radius),
+        (x, y + height - radius),
+        (x + radius, y + height),
+        (x + width - radius, y + height),
+        (x + width, y + height - radius),
+        (x + width, y + radius),
+        (x + width - radius, y),
+        (x + radius, y),
+    ], color)
+    pygame.gfxdraw.aapolygon(screen, [
+        (x, y + radius),
+        (x, y + height - radius),
+        (x + radius, y + height),
+        (x + width - radius, y + height),
+        (x + width, y + height - radius),
+        (x + width, y + radius),
+        (x + width - radius, y),
+        (x + radius, y),
+    ], color)
+
+
+def main_menu(screen):
+    # Load the background image
+    background_image = pygame.image.load("BG4.jpg").convert()
+    background_image = pygame.transform.scale(background_image, (1920, 1080))
+    
+    # Define button properties
+    button_width = 200
+    button_height = 50
+    button_color = (75, 75, 75)  # Greyish black
+    text_color = (255, 255, 255)
+    radius = 10  # Radius for rounded corners
+    
+    # Calculate button positions
+    screen_width, screen_height = screen.get_size()
+    play_button_rect = pygame.Rect((screen_width - button_width) // 2, screen_height // 2 - button_height - 10, button_width, button_height)
+    quit_button_rect = pygame.Rect((screen_width - button_width) // 2, screen_height // 2 + 10, button_width, button_height)
+    
+    # Initialize fonts
+    font = pygame.font.Font(None, 36)
+    
+    # Render the main menu
+    running = True
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                return False
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_pos = pygame.mouse.get_pos()
+                if play_button_rect.collidepoint(mouse_pos):
+                    return True  # Start the game
+                elif quit_button_rect.collidepoint(mouse_pos):
+                    pygame.quit()
+                    return False
+
+        # Draw the background image
+        screen.blit(background_image, (0, 0))
+        
+        # Draw the buttons with rounded corners and shadow
+        draw_rounded_button(screen, play_button_rect, button_color, radius)
+        draw_rounded_button(screen, quit_button_rect, button_color, radius)
+        
+        # Add text to buttons
+        play_text = font.render("Play", True, text_color)
+        quit_text = font.render("Quit", True, text_color)
+        screen.blit(play_text, play_text.get_rect(center=play_button_rect.center))
+        screen.blit(quit_text, quit_text.get_rect(center=quit_button_rect.center))
+        
+        pygame.display.flip()
+
+    return False
 
 
 # Main initialiser
@@ -249,6 +340,9 @@ def main():
     pygame.init()
     screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
     clock = pygame.time.Clock()
+    # Show the main menu
+    if not main_menu(screen):
+        return  # Exit the game if quit is selected
 
     # Initialize volume controls
     ambience_music_volume = 0.5  # Default volume for ambience and music
