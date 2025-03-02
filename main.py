@@ -172,7 +172,7 @@ def render_pause_menu(screen, formatted_time):
 
     return resume_button_rect, settings_button_rect, quit_button_rect
 
-def render_settings_menu(screen, background_image, from_pause_menu):
+def render_settings_menu(screen, background_image, ambience_music_volume, sfx_volume):
     screen_width, screen_height = screen.get_size()
     
     # Draw the background image
@@ -188,14 +188,16 @@ def render_settings_menu(screen, background_image, from_pause_menu):
     move_left_text = small_font.render("A / Left Arrow: Move Left", True, (255, 255, 255))
     jump_text = small_font.render("Space / Up Arrow: Jump", True, (255, 255, 255))
     pause_text = small_font.render("ESC: Pause", True, (255, 255, 255))
+    ambience_music_text = small_font.render(f"Ambience & Music: {int(ambience_music_volume * 100)}%", True, (255, 255, 255))
+    sfx_text = small_font.render(f"Sound Effects: {int(sfx_volume * 100)}%", True, (255, 255, 255))
 
     # Calculate positions
     settings_x = screen_width - settings_text.get_width() - 20
     settings_y = 20
-    controls_y_start = 200
+    controls_y_start = 100  # Moved higher up
     controls_x = 20
 
-    # Render text
+    # Render text for controls
     screen.blit(settings_text, (settings_x, settings_y))
     screen.blit(controls_text, (controls_x, controls_y_start))
     screen.blit(move_right_text, (controls_x, controls_y_start + 50))
@@ -208,18 +210,55 @@ def render_settings_menu(screen, background_image, from_pause_menu):
     back_button_rect = back_button_text.get_rect(bottomright=(screen_width - 20, screen_height - 20))
     screen.blit(back_button_text, back_button_rect.topleft)
 
+    # Function to draw sliders with knobs and outlines
+    def draw_slider_with_knob(x, y, width, height, fill_width, color):
+        # Draw the black outline
+        pygame.draw.rect(screen, (0, 0, 0), (x - 2, y - 2, width + 4, height + 4))
+        # Draw the slider background
+        pygame.draw.rect(screen, (255, 255, 255), (x, y, width, height))
+        # Draw the filled part of the slider
+        pygame.draw.rect(screen, color, (x, y, fill_width, height))
+        # Draw the knob as a circle
+        knob_radius = height // 2
+        knob_x = x + fill_width
+        knob_y = y + knob_radius
+        pygame.draw.circle(screen, (255, 255, 255), (knob_x, knob_y), knob_radius)
+        pygame.draw.circle(screen, (0, 0, 0), (knob_x, knob_y), knob_radius, 2)  # Black outline for the knob
+
+    # Render and position the sliders and their labels to fit within the squares
+    screen.blit(ambience_music_text, (50, 600))  # Adjusted y-coordinate for text
+    ambience_music_slider_width = 300
+    ambience_music_slider_fill = int(ambience_music_volume * ambience_music_slider_width)
+    draw_slider_with_knob(50, 650, ambience_music_slider_width, 20, ambience_music_slider_fill, (255, 0, 0))
+
+    screen.blit(sfx_text, (50, 750))  # Adjusted y-coordinate for text
+    sfx_slider_width = 300
+    sfx_slider_fill = int(sfx_volume * sfx_slider_width)
+    draw_slider_with_knob(50, 800, sfx_slider_width, 20, sfx_slider_fill, (0, 0, 255))
+
     pygame.display.flip()
 
-    return back_button_rect
+    return back_button_rect, pygame.Rect(50, 650, 300, 20), pygame.Rect(50, 800, 300, 20)
+
+
+
+
 
 # Main initialiser
 def main():
     pygame.init()
     screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
     clock = pygame.time.Clock()
-    #play ambience in a loop.
+
+    # Initialize volume controls
+    ambience_music_volume = 0.5  # Default volume for ambience and music
+    sfx_volume = 0.5  # Default volume for sound effects
+
+    # Load ambience and music sound
+    ambience = pygame.mixer.Sound("ambience.mp3")
     ambience.play(-1)
-    ambience.set_volume(0.3)
+    ambience.set_volume(ambience_music_volume)
+    
     global menu_sound_playing
     
     # Load the background images
@@ -273,6 +312,9 @@ def main():
     resume_button_rect = pygame.Rect(0, 0, 1, 1)
     settings_button_rect = pygame.Rect(0, 0, 1, 1)
     quit_button_rect = pygame.Rect(0, 0, 1, 1)
+    back_button_rect = pygame.Rect(0, 0, 1, 1)  # Initialize back button rect for settings menu
+    ambience_music_slider_rect = pygame.Rect(0, 0, 1, 1)
+    sfx_slider_rect = pygame.Rect(0, 0, 1, 1)
 
     while running:
         for event in pygame.event.get():
@@ -288,7 +330,6 @@ def main():
                             paused_start_time = time.time()
                         else:
                             total_paused_duration += time.time() - paused_start_time
-
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_pos = pygame.mouse.get_pos()
                 if paused and not in_settings:
@@ -299,21 +340,39 @@ def main():
                         in_settings = True
                     elif quit_button_rect.collidepoint(mouse_pos):
                         running = False
-
-                if in_settings:
-                    back_button_rect = render_settings_menu(screen, settings_background_image, True)
+                elif in_settings:
                     if back_button_rect.collidepoint(mouse_pos):
-                        in_settings = False
-                
+                        in_settings = False  # Close settings menu
+                    elif ambience_music_slider_rect.collidepoint(mouse_pos):
+                        ambience_music_volume = (mouse_pos[0] - ambience_music_slider_rect.x) / ambience_music_slider_rect.width
+                        ambience_music_volume = min(max(ambience_music_volume, 0), 1)
+                        ambience.set_volume(ambience_music_volume)  # Set ambience and music volume
+                    elif sfx_slider_rect.collidepoint(mouse_pos):
+                        sfx_volume = (mouse_pos[0] - sfx_slider_rect.x) / sfx_slider_rect.width
+                        sfx_volume = min(max(sfx_volume, 0), 1)
+                        # Set sound effects volume for all sound effects
+                        player_powerup_sound.set_volume(sfx_volume)
+                        player_shoot_sound.set_volume(sfx_volume)
+                        player_running.set_volume(sfx_volume)  
+                        Player_jump.set_volume(sfx_volume)
+                        damage.set_volume(sfx_volume)
+                        arrow_platform.set_volume(sfx_volume)
+                        enemy_move_sound.set_volume(sfx_volume)
+                        enemy_death_sound.set_volume(sfx_volume)
+                        enemy_take_damage_sound.set_volume(sfx_volume)
                 print(f"Mouse button {event.button} pressed at {event.pos}")
 
         if not paused and not in_settings:
+            if menu_sound_playing:
+                menu_sound.stop()
+                menu_sound_playing = False
+
             handle_input(player)
             
             scroll_x = -player.rect.centerx + screen.get_width() // 2
             scroll_x = max(-(WORLD_WIDTH - screen.get_width()), min(0, scroll_x))
             
-            character_sprites.update(enemies, test_level.platforms, screen.get_width(), screen.get_height(), scroll_x,player_powerup_sound,arrow_platform)
+            character_sprites.update(enemies, test_level.platforms, screen.get_width(), screen.get_height(), scroll_x, player_powerup_sound, arrow_platform)
             
             for enemy in enemies:
                 enemy.update(test_level.platforms, player, scroll_x)
@@ -328,7 +387,7 @@ def main():
             test_level.check_collisions(player)
 
             if pygame.sprite.spritecollideany(player, enemies):
-                player.take_damage(10,damage)
+                player.take_damage(10, damage)
 
             player.check_powerup_collisions()
             
@@ -354,10 +413,9 @@ def main():
             resume_button_rect, settings_button_rect, quit_button_rect = render_pause_menu(screen, formatted_time)
         elif in_settings:
             paused = False
-            back_button_rect = render_settings_menu(screen, settings_background_image, True)
+            back_button_rect, ambience_music_slider_rect, sfx_slider_rect = render_settings_menu(screen, settings_background_image, ambience_music_volume, sfx_volume)
 
     pygame.quit()
-
 
 if __name__ == "__main__":
     main()
