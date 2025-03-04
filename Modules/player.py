@@ -101,7 +101,7 @@ class Player(pygame.sprite.Sprite):
         self.is_invincible = False  # Add invincibility attribute
         self.invincible_timer = 0  # Add invincibility timer attribute
         
-        self.cooldown = 2000  # Cooldown time in milliseconds (3 seconds)
+        self.cooldown = 1600  # Cooldown time in milliseconds (3 seconds)
         self.last_shot_time = 0
         
         # Keep track of arrow shooting spritesheet:
@@ -161,6 +161,8 @@ class Player(pygame.sprite.Sprite):
 
         # Arrow group
         self.arrows = pygame.sprite.Group()
+        self.active_powerups = []  # List to store active power-ups
+        self.dead = False
 
         
     def draw(self, screen, scroll_x):
@@ -265,8 +267,8 @@ class Player(pygame.sprite.Sprite):
         # Collision detection for borders
         if self.rect.left < 0:
             self.rect.left = 0
-        #if self.rect.right > self.screen.get_width():
-            #self.rect.right = self.screen.get_width()
+        if self.rect.right > self.screen.get_width():
+            self.rect.right = self.screen.get_width()
         if self.rect.top < 0:
             self.rect.top = 0
         if self.rect.bottom > self.screen.get_height():
@@ -281,23 +283,29 @@ class Player(pygame.sprite.Sprite):
         if self.shooting:
             self.draw_trajectory()
             
-        #handle speed boost timer
+        # Handle speed boost timer
         if self.speed_timer > 0:
-            self.speed_timer -=1
+            self.speed_timer -= 1
             if self.speed_timer <= 0:
                 self.speed = self.original_speed
+                # Deactivate speed power-up
+                self.deactivate_powerup("speed")
         
         # Handle strength power-up timer
         if self.strength_timer > 0:
             self.strength_timer -= 1
             if self.strength_timer <= 0:
                 self.has_strength_powerup = False
+                # Deactivate strength power-up
+                self.deactivate_powerup("strength")
                 
         # Handle invincibility timer
         if self.invincible_timer > 0:
             self.invincible_timer -= 1
             if self.invincible_timer <= 0:
                 self.is_invincible = False
+                # Deactivate invincibility power-up
+                self.deactivate_powerup("godmode")
                 
         powerup_collisions = pygame.sprite.spritecollide(self,self.powerup_group,True)
         if powerup_collisions:
@@ -388,8 +396,7 @@ class Player(pygame.sprite.Sprite):
         
         
     def die(self):
-        print("player has died!")
-        #more here later on
+        self.dead = True
 
     def calculate_arrow_speed(self, mouse_pos):
         dx = mouse_pos[0] - self.rect.centerx
@@ -410,15 +417,34 @@ class Player(pygame.sprite.Sprite):
         if powerup_collisions:
             for powerup in powerup_collisions:
                 self.power_up(powerup)
+                
+    # Method to update active power-ups
+    def update_active_powerups(self):
+        for powerup in self.powerup_group:
+            if powerup.active:
+                if powerup not in self.active_powerups:
+                    self.active_powerups.append(powerup)
+            else:
+                if powerup in self.active_powerups:
+                    self.active_powerups.remove(powerup)
+                    
+    def deactivate_powerup(self, powerup_type):
+        for powerup in self.active_powerups:
+            if powerup.type == powerup_type:
+                powerup.active = False
+                self.active_powerups.remove(powerup)
+                break
                         
     
-
+        
 class PowerUp(pygame.sprite.Sprite):
     def __init__(self, x, y, powerup_type):
         super().__init__()
         self.original_x = x
         self.original_y = y
         self.type = powerup_type
+        self.active = False  # Add active status
+
         powerup_images = {
             "health": "health_powerup.png",
             "speed": "speed_powerup.png",
@@ -429,8 +455,8 @@ class PowerUp(pygame.sprite.Sprite):
         try:
             if powerup_type in powerup_images:
                 image_path = os.path.join(os.path.dirname(__file__), "Assets", powerup_images[powerup_type])
-                image = pygame.image.load(image_path).convert_alpha()
-                self.image = pygame.transform.scale(image, (0.7*50, 0.7*63))
+                self.image = pygame.image.load(image_path).convert_alpha()
+                self.image = pygame.transform.scale(self.image, (int(0.7 * 50), int(0.7 * 63)))
             else:
                 raise ValueError(f"Unknown power-up type: {powerup_type}")
         except FileNotFoundError:
@@ -440,33 +466,37 @@ class PowerUp(pygame.sprite.Sprite):
 
         self.rect = self.image.get_rect()
         self.rect.topleft = (x, y)
-        
 
     def apply_effect(self, player):
+        # Application logic for power-ups remains the same
         if self.type == "health":
-            print("Applying health power-up effect")
+            self.active = True
             player.heal(50)
         elif self.type == "speed":
-            print("Applying speed power-up effect")
+            self.active = True
             player.speed += 3
-            player.speed_timer = 5*120
+            player.speed_timer = 5 * 120
         elif self.type == "strength":
-            print("Applying strength power-up effect")
+            self.active = True
             player.has_strength_powerup = True
-            player.strength_timer = 5*120
+            player.strength_timer = 5 * 120
         elif self.type == "godmode":  # Handle defense power-up
+            self.active = True
             player.is_invincible = True
             player.invincible_timer = 5 * 120  # 5 seconds at 120 FPS
+        self.active = True  # Set power-up as active when applied
 
-    def update(self,scroll_x):
+    def update(self, scroll_x):
         # Positioning with respect to world coordinates
         self.rect.x = self.original_x + scroll_x
         self.rect.y = self.original_y
-        
-    def draw(self,surface):
+
+    def draw(self, surface):
         surface.blit(self.image, self.rect)
-        
-        
+
+
+
+
 class Wood(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__()
@@ -486,3 +516,51 @@ class Wood(pygame.sprite.Sprite):
     def draw(self, screen):
         # Draw the wood item on the screen
         screen.blit(self.image, self.rect)
+        
+class HUD:
+    def __init__(self, screen):
+        self.screen = screen
+        self.font = pygame.font.Font(None, 24)  # Smaller font size for HUD text
+        # Box color is a darker grey (here a tuple with no alpha, since pygame.draw.rect ignores alpha)
+        self.box_color = (80, 80, 80)
+        self.shadow_color = (0, 0, 0)          # Black shadow
+        self.box_rect = pygame.Rect(10, screen.get_height() - 80, 240, 60)
+        self.text = self.font.render("Active Powerups", True, (0, 0, 0))  # Label in black
+        self.text_rect = self.text.get_rect(topleft=(15, screen.get_height() - 75))
+
+    def draw(self, player):
+        # Draw the shadow, then the box
+        shadow_rect = self.box_rect.move(2, 2)
+        pygame.draw.rect(self.screen, self.shadow_color, shadow_rect, border_radius=10)
+        pygame.draw.rect(self.screen, self.box_color, self.box_rect, border_radius=10)
+        self.screen.blit(self.text, self.text_rect)
+
+        # Dictionary mapping powerup types to their corresponding image filename
+        powerup_images = {
+            "health": "health_powerup.png",
+            "speed": "speed_powerup.png",
+            "strength": "strength_powerup.png",
+            "godmode": "defense_powerup.png"
+        }
+
+        x_offset = 20
+        for powerup_type, image_filename in powerup_images.items():
+            image_path = os.path.join(os.path.dirname(__file__), "Assets", image_filename)
+            powerup_image = pygame.image.load(image_path).convert_alpha()
+            powerup_image = pygame.transform.scale(powerup_image, (30, 30))
+
+            # Use the active_powerups list to check if this type is active
+            if any(p.type == powerup_type for p in player.active_powerups):
+                powerup_image.set_alpha(255)  # Fully opaque if active
+            else:
+                powerup_image.set_alpha(153)  # Translucent (60% opacity) if inactive
+
+            self.screen.blit(powerup_image, (x_offset, self.screen.get_height() - 50))
+            x_offset += 40
+
+
+
+
+
+
+

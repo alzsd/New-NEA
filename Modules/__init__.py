@@ -12,3 +12,4 @@ from .enemy import Enemy
 
 from .player import PowerUp
 from .player import Wood
+from .player import HUD
