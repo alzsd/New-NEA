@@ -24,7 +24,11 @@ class Platform(pygame.sprite.Sprite):
         # Update rect position based on world position and scroll_x
         self.rect.x = self.world_x + scroll_x
         self.rect.y = self.world_y
+        
 
     def draw(self, screen):
         # Draw the image at the rect's updated position
         screen.blit(self.image, (self.rect.x, self.rect.y))
+        #outline_color = (255, 0, 0)  # Red color for the outline
+        #outline_thickness = 2  # Thickness of the outline
+        #pygame.draw.rect(screen, outline_color, self.rect, outline_thickness)

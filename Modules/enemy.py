@@ -50,6 +50,7 @@ class Enemy(pygame.sprite.Sprite):
 
     def update(self, platforms, player, scroll_x):
         if not self.is_dying:
+            # Check if the player is within patrol range + buffer
             if abs(self.world_x - player.rect.x) <= self.patrol_range + 50:
                 self.pursue_player(player)
             else:
@@ -61,6 +62,10 @@ class Enemy(pygame.sprite.Sprite):
             self.y_vel += self.gravity
 
             self.check_platform_collisions(platforms)
+
+            # Boundary checks to keep enemies within game world bounds
+            self.world_x = max(0, min(self.world_x, 5000))  # Example bounds (adjust as necessary)
+            self.world_y = max(0, min(self.world_y, 1080))  # Example bounds (adjust as necessary)
 
             # Calculate distance to the player
             player_pos = player.rect.center
@@ -81,14 +86,13 @@ class Enemy(pygame.sprite.Sprite):
                 self.move_sound_playing = True
             elif self.rect.x % 100 != 0:
                 self.move_sound_playing = False
-
         else:
             self.fade_out()
 
         # Update screen position based on world position and scroll_x
         self.rect.x = self.world_x + scroll_x
         self.rect.y = self.world_y
-                    
+
 
 
     def check_platform_collisions(self, platforms):
@@ -118,9 +122,9 @@ class Enemy(pygame.sprite.Sprite):
                     self.rect.left = platform.rect.right
                     self.world_x = self.rect.x
                     self.x_vel = 0
-                    
+
     def take_damage(self, amount):
-        self.health -= amount
+        self.health -= amount+30
         if not self.take_damage_sound_playing:
             self.take_damage_sound.play()
             self.take_damage_sound_playing = True
@@ -138,7 +142,7 @@ class Enemy(pygame.sprite.Sprite):
             
     def draw(self, surface, scroll_x):
         # Draw enemy based on world position relative to scroll
-        surface.blit(self.image, (self.world_x - scroll_x, self.world_y))
+        surface.blit(self.image, (self.world_x, self.world_y))
         self.draw_health_bar(surface, scroll_x)
 
     def draw_health_bar(self, surface, scroll_x):
@@ -175,6 +179,9 @@ class Enemy(pygame.sprite.Sprite):
             self.x_vel = self.patrol_direction * self.speed if self.is_jumping else 0
             
     def patrol(self):
-        if self.rect.x >= self.patrol_limits[1] or self.rect.x <= self.patrol_limits[0]:
-            self.x_vel = -self.x_vel  # Change direction
-            
+        # Patrol between the defined patrol limits
+        if self.world_x >= self.patrol_limits[1]:
+            self.patrol_direction = -1  # Change direction to left
+        elif self.world_x <= self.patrol_limits[0]:
+            self.patrol_direction = 1  # Change direction to right
+        self.x_vel = self.patrol_direction * self.speed

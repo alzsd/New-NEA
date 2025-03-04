@@ -5,6 +5,7 @@ MAX_ARROW_SPEED = 15
 MAX_DISPLACEMENT = 600
 
 #arrow class
+# Arrow class
 class Arrow(pygame.sprite.Sprite):
     arrow_sound_playing = False  # Class variable to track the arrow sound state
 
@@ -14,7 +15,7 @@ class Arrow(pygame.sprite.Sprite):
         arrow_path = os.path.join(assets_path, "Arrow_7.png")
         self.image = pygame.image.load(arrow_path).convert_alpha()  # This links the image file
         
-        self.image = pygame.transform.scale(self.image, (int(self.image.get_width() * 3), int(self.image.get_height() * 1.5)))
+        self.image = pygame.transform.scale(self.image, (int(self.image.get_width() * 2.2), int(self.image.get_height()*0.8)))
         self.damage = damage
         
         self.original_image = self.image  # Keeps track of original direction of the arrow
@@ -68,9 +69,11 @@ class Arrow(pygame.sprite.Sprite):
             else:
                 self.image.set_alpha(self.alpha)
                 
-    def draw(self, surface):
+    def draw(self, surface,screen):
         surface.blit(self.image, self.rect)
-        pygame.draw.rect(surface, (0, 255, 0), self.rect, 1)  # Green box around the arrow
+        outline_color = (255, 0, 0)  # Red color for the outline
+        outline_thickness = 2  # Thickness of the outline
+        pygame.draw.rect(screen,outline_color, self.rect, outline_thickness)
 
 
 def apply_strength_powerup(player):
@@ -98,6 +101,9 @@ class Player(pygame.sprite.Sprite):
         self.is_invincible = False  # Add invincibility attribute
         self.invincible_timer = 0  # Add invincibility timer attribute
         
+        self.cooldown = 2000  # Cooldown time in milliseconds (3 seconds)
+        self.last_shot_time = 0
+        
         # Keep track of arrow shooting spritesheet:
         self.shooting_timer = 0.0
         self.shooting_duration = 0.4
@@ -124,10 +130,10 @@ class Player(pygame.sprite.Sprite):
         self.bow_sheet = pygame.image.load(bow_sheet_path).convert_alpha()
 
         # Scale the sprite sheets
-        self.run_sheet = pygame.transform.scale(self.run_sheet, (int(self.run_sheet.get_width() * 1.2), int(self.run_sheet.get_height() * 1.5)))
-        self.idle_sheet = pygame.transform.scale(self.idle_sheet, (int(self.idle_sheet.get_width() * 1.2), int(self.idle_sheet.get_height() * 1.5)))
-        self.jump_sheet = pygame.transform.scale(self.jump_sheet, (int(self.jump_sheet.get_width() * 1.2), int(self.jump_sheet.get_height() * 1.5)))
-        self.bow_sheet = pygame.transform.scale(self.bow_sheet, (int(self.bow_sheet.get_width() * 1.2), int(self.bow_sheet.get_height() * 1.5)))
+        self.run_sheet = pygame.transform.scale(self.run_sheet, (int(self.run_sheet.get_width()*1.1), int(self.run_sheet.get_height()*1.1)))
+        self.idle_sheet = pygame.transform.scale(self.idle_sheet, (int(self.idle_sheet.get_width()*1.1), int(self.idle_sheet.get_height()*1.1)))
+        self.jump_sheet = pygame.transform.scale(self.jump_sheet, (int(self.jump_sheet.get_width()*1.1), int(self.jump_sheet.get_height()*1.1)))
+        self.bow_sheet = pygame.transform.scale(self.bow_sheet, (int(self.bow_sheet.get_width()*1.1), int(self.bow_sheet.get_height()*1.1)))
 
 
         # Initialize the rect attribute before calling load_frames
@@ -184,7 +190,8 @@ class Player(pygame.sprite.Sprite):
             self.current_frames = self.bow_frames
 
     def shoot_arrow(self,player_shoot_sound):
-        if self.equipped_weapon == "bow":
+        current_time = pygame.time.get_ticks()
+        if self.equipped_weapon == "bow" and current_time - self.last_shot_time >= self.cooldown:
             player_shoot_sound.play()
             print("shooting arrow - !Debug!")
             direction = self.direction
@@ -193,7 +200,7 @@ class Player(pygame.sprite.Sprite):
             print(f"Arrow damage: {damage}")  # Debug
             arrow = Arrow(self.rect.centerx, self.rect.centery, direction, self.aim_angle, arrow_speed,damage)
             self.arrows.add(arrow)
-
+            self.last_shot_time = current_time  # Update the last shot time
 
     def calculate_trajectory(self, speed, gravity=0.2, num_points=30):
         self.trajectory = []
@@ -258,8 +265,8 @@ class Player(pygame.sprite.Sprite):
         # Collision detection for borders
         if self.rect.left < 0:
             self.rect.left = 0
-        if self.rect.right > self.screen.get_width():
-            self.rect.right = self.screen.get_width()
+        #if self.rect.right > self.screen.get_width():
+            #self.rect.right = self.screen.get_width()
         if self.rect.top < 0:
             self.rect.top = 0
         if self.rect.bottom > self.screen.get_height():
@@ -403,6 +410,8 @@ class Player(pygame.sprite.Sprite):
         if powerup_collisions:
             for powerup in powerup_collisions:
                 self.power_up(powerup)
+                
+    
         
                 
     
@@ -424,7 +433,7 @@ class PowerUp(pygame.sprite.Sprite):
             if powerup_type in powerup_images:
                 image_path = os.path.join(os.path.dirname(__file__), "Assets", powerup_images[powerup_type])
                 image = pygame.image.load(image_path).convert_alpha()
-                self.image = pygame.transform.scale(image, (50, 63))
+                self.image = pygame.transform.scale(image, (0.7*50, 0.7*63))
             else:
                 raise ValueError(f"Unknown power-up type: {powerup_type}")
         except FileNotFoundError:
@@ -459,3 +468,24 @@ class PowerUp(pygame.sprite.Sprite):
         
     def draw(self,surface):
         surface.blit(self.image, self.rect)
+        
+        
+class Wood(pygame.sprite.Sprite):
+    def __init__(self, x, y):
+        super().__init__()
+        assets_path = os.path.join(os.path.dirname(__file__), "Assets")
+        wood_path = os.path.join(assets_path, "wood.png")  # Ensure you have a wood.png file in your Assets folder
+        self.image = pygame.image.load(wood_path).convert_alpha()  # Load the image for the wood item
+        self.image = pygame.transform.scale(self.image,(50,63))
+        self.rect = self.image.get_rect()
+        self.rect.topleft = (x, y)  # Position the wood item at the given coordinates
+        self.original_x = x
+        self.original_y = y
+
+    def update(self, scroll_x):
+        # Update position based on scroll
+        self.rect.x = self.original_x+scroll_x
+
+    def draw(self, screen):
+        # Draw the wood item on the screen
+        screen.blit(self.image, self.rect)

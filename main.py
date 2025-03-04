@@ -2,7 +2,7 @@ import pygame
 import os
 import math
 import time
-from Modules import Player, Platform, Level, Arrow, Enemy, PowerUp
+from Modules import Player, Platform, Level, Arrow, Enemy, PowerUp, Wood
 from pygame import gfxdraw
 
 #sound effects
@@ -29,7 +29,7 @@ enemy_take_damage_sound = pygame.mixer.Sound("enemy damaged.wav")
 
 
 # Global variables/constants
-speed = 3
+speed = 2
 WORLD_WIDTH = 1500000  # May change
 player_start_x = 50
 player_start_y = 300
@@ -340,23 +340,77 @@ def setup_level(level_layout):
 
     for row_index, row in enumerate(level_layout):
         for col_index, tile in enumerate(row):
+            x = col_index * tile_size
+            y = row_index * tile_size
+            
             if tile in ['1', '2']:
-                x = col_index * tile_size
-                y = row_index * tile_size
                 should_flip = False
-
                 if tile == '1':
-                    # Check if the tile to the left exists and is a tile
                     if col_index > 0 and level_layout[row_index][col_index - 1] in ['1', '2']:
                         should_flip = True
-                    # Check if the tile to the right exists and is a tile
                     if col_index < len(row) - 1 and level_layout[row_index][col_index + 1] in ['1', '2']:
                         should_flip = False
 
                 platform = Platform(x, y, tile, should_flip)
                 level.add_platform(platform)
 
+            
+            elif tile == '3':  # Add wood item
+                wood = Wood(x, y)
+                level.add_wood(wood)
+                
     return level
+
+
+
+def handle_collect_wood(player, level, screen):
+    collected_woods = pygame.sprite.spritecollide(player, level.wood_items, True)
+    if collected_woods:
+        print(f"Collected {len(collected_woods)} wood items.")
+        if not level.wood_items:
+            mission_complete(screen)
+
+
+
+
+def mission_complete(screen):
+    print("Mission Complete!")
+    
+    # Mute all audio
+    pygame.mixer.music.stop()
+    for channel in range(pygame.mixer.get_num_channels()):
+        pygame.mixer.Channel(channel).stop()
+    
+    # Load level complete sound
+    level_complete_sound = pygame.mixer.Sound("level complete.mp3")
+    level_complete_sound.play()
+
+    # Display "Mission Success"
+    font = pygame.font.Font(None, 120)
+    text = font.render("Mission Success", True, (255, 255, 255))
+    text_rect = text.get_rect(center=(screen.get_width() // 2, screen.get_height() // 2))
+    
+    shadow_font = pygame.font.Font(None, 122)
+    shadow_text = shadow_font.render("Mission Success", True, (0, 0, 0))
+    shadow_text_rect = shadow_text.get_rect(center=(screen.get_width() // 2 + 2, screen.get_height() // 2 + 2))
+    
+    # Freeze the game and display text
+    for alpha in range(255, -1, -5):
+        screen.fill((0, 0, 0))
+        shadow_text.set_alpha(alpha)
+        text.set_alpha(alpha)
+        screen.blit(shadow_text, shadow_text_rect)
+        screen.blit(text, text_rect)
+        pygame.display.flip()
+        pygame.time.delay(50)
+    
+    # Return to the main menu
+    main_menu(screen)
+
+
+
+
+
 
 # Main initialiser
 def main():
@@ -384,7 +438,7 @@ def main():
     settings_background_image = pygame.transform.scale(settings_background_image, (1920, 1080))
 
     # Define the world width for the extended game map
-    WORLD_WIDTH = 1500000
+    WORLD_WIDTH = 9000
     difficulty = "medium"
 
     # Create the test level
@@ -400,26 +454,28 @@ def main():
         '................................................................................................................................................',
         '................................................................................................................................................',
         '................................................................................................................................................',
-        '................................................................................................................................................',
-        '................................................................................................................................................',
-        '................................................................................................................................................',
-        '................................................................................................................................................',
-        '................................................................................................................................................',
-        '................................................................................................................................................',
-        '......................1111111...................................................................................................................',
-        '..........11111111..............................................................................................................................',
-        '........1122222222..............................................................................................................................',
-        '.......12222222222...............................................................................................................................',
-        '11111112222222222221111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111'          
-    ]
+        '...............................................................................................................................................',
+        '.......3....................11111111111........................111111111............................................................................',
+        '....111111111......................22221111.........11111...................................................................................................',
+        '........................11111........222222222111111111222221................................................................................................',
+        '..................111.................2222222222222222222221.......................................................................................',
+        '................................................2222222222221.....................................................................................',
+        '.............3........1111111.........................222222211111111111111111...................................................................................',
+        '..........11111111..........22.........................222222222222........................................................................',
+        '........1122222222...........22..............................222222.............................................................................',
+        '111111112222222222............22..............................222222.....222222..................................................',
+        '2222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222'          
+    ] #each step up is +55 px
     test_level = setup_level(level_layout)
     current_level = "level1"
     # Create a group for power-ups and add some power-ups
     powerup_group = pygame.sprite.Group()
-    powerup_group.add(PowerUp(400, screen.get_height() - 130, "health"))
-    powerup_group.add(PowerUp(500, screen.get_height() - 360, "speed"))
-    powerup_group.add(PowerUp(700, screen.get_height() - 130, "strength"))
+    powerup_group.add(PowerUp(1700, screen.get_height() - 85, "health")) 
+    powerup_group.add(PowerUp(600, screen.get_height() - 220, "speed"))
+    powerup_group.add(PowerUp(300, screen.get_height() - 470, "speed"))
+    powerup_group.add(PowerUp(700, screen.get_height() - 600, "strength"))
     powerup_group.add(PowerUp(2000, screen.get_height() - 130, "godmode"))
+    
 
     player = start_level(current_level, screen, difficulty, powerup_group)
     character_sprites = pygame.sprite.Group()
@@ -427,8 +483,8 @@ def main():
 
     # Creating and adding enemies
     enemies = pygame.sprite.Group()
-    enemy = Enemy(300, 930)
-    enemy2 = Enemy(1000, 930)
+    enemy = Enemy(200, 890)
+    enemy2 = Enemy(1200, 930)
     enemies.add(enemy)
     enemies.add(enemy2)
 
@@ -510,6 +566,7 @@ def main():
             for powerup in powerup_group:
                 powerup.update(scroll_x)
                 powerup.draw(screen)
+                
 
 
             test_level.check_collisions(player)
@@ -517,7 +574,7 @@ def main():
             test_level.draw(screen, scroll_x)
 
             if pygame.sprite.spritecollideany(player, enemies):
-                player.take_damage(10, damage)
+                player.take_damage(30, damage)
 
             player.check_powerup_collisions()
             
@@ -534,6 +591,8 @@ def main():
             player.arrows.draw(screen)
             player.draw_health_bar(screen)
             player.draw_health_text(screen)
+            
+            handle_collect_wood(player,test_level,screen)
             
             pygame.display.flip()
             clock.tick(120)

@@ -11,4 +11,4 @@ from .platform_1 import Platform
 from .enemy import Enemy
 
 from .player import PowerUp
-
+from .player import Wood
