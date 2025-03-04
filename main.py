@@ -408,6 +408,29 @@ def mission_complete(screen):
     main_menu(screen)
 
 
+def draw_wood_collection_bar(screen, collected_woods, total_woods):
+    bar_width = 300
+    bar_height = 20
+    bar_x = (screen.get_width() - bar_width) // 2
+    bar_y = 20
+    
+    proportion_collected = collected_woods / total_woods
+    
+    # Colors
+    bar_color = (255, 215, 0)  # Yellow/Gold color
+    border_color = (0, 0, 0)   # Black for the border
+    
+    # Background bar
+    pygame.draw.rect(screen, border_color, (bar_x - 2, bar_y - 2, bar_width + 4, bar_height + 4), border_radius=10)
+    pygame.draw.rect(screen, bar_color, (bar_x, bar_y, bar_width * proportion_collected, bar_height), border_radius=10)
+    
+    # Text
+    font = pygame.font.Font(None, 36)
+    text = font.render(f"{collected_woods}/{total_woods} woods collected", True, (255, 255, 255))
+    text_rect = text.get_rect(center=(screen.get_width() // 2, bar_y + bar_height + 20))
+    
+    screen.blit(text, text_rect)
+
 
 
 
@@ -593,6 +616,11 @@ def main():
             player.draw_health_text(screen)
             
             handle_collect_wood(player,test_level,screen)
+            collected_woods = 5 - len(test_level.wood_items)
+            handle_collect_wood(player, test_level, screen)
+            
+            # Draw HUD
+            draw_wood_collection_bar(screen, collected_woods, 5)
             
             pygame.display.flip()
             clock.tick(120)

@@ -410,10 +410,7 @@ class Player(pygame.sprite.Sprite):
         if powerup_collisions:
             for powerup in powerup_collisions:
                 self.power_up(powerup)
-                
-    
-        
-                
+                        
     
 
 class PowerUp(pygame.sprite.Sprite):
