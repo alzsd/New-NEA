@@ -43,8 +43,6 @@ menu_sound_playing = False
 # Dictionaries for start positions
 start_positions = {
    "level1": (player_start_x, player_start_y),
-   "level2": (player_start_x, player_start_y),
-   "level3": (player_start_x, player_start_y)
 }
 
 # Handle input function
@@ -283,7 +281,7 @@ def draw_rounded_button(screen, rect, color, radius, shadow_offset=5):
     ], color)
 
 
-def main_menu(screen):
+def main_menu(screen, unlocked_levels, total_levels):
     # Load the background image
     background_image = pygame.image.load("BG4.jpg").convert()
     background_image = pygame.transform.scale(background_image, (1920, 1080))
@@ -309,14 +307,20 @@ def main_menu(screen):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
-                return False
+                return None
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_pos = pygame.mouse.get_pos()
                 if play_button_rect.collidepoint(mouse_pos):
-                    return True  # Start the game
+                    # Open the level selection menu
+                    while True:
+                        selected_level = level_selection_menu(screen, unlocked_levels, total_levels)
+                        if selected_level == "back":
+                            break  # Return to the main menu
+                        elif selected_level:
+                            return selected_level  # Return the selected level to start the game
                 elif quit_button_rect.collidepoint(mouse_pos):
                     pygame.quit()
-                    return False
+                    return None
 
         # Draw the background image
         screen.blit(background_image, (0, 0))
@@ -333,7 +337,10 @@ def main_menu(screen):
         
         pygame.display.flip()
 
-    return False
+    return None
+
+
+
 
 def setup_level(level_layout):
     level = Level()
@@ -408,7 +415,7 @@ def mission_complete(screen):
     # Return to the main menu
     main_menu(screen)
     
-def mission_failed(screen):
+def mission_failed(screen, unlocked_levels, total_levels):
     print("Mission failed - player died!")
     
     # Mute all audio
@@ -416,11 +423,11 @@ def mission_failed(screen):
     for channel in range(pygame.mixer.get_num_channels()):
         pygame.mixer.Channel(channel).stop()
     
-    # Load level complete sound
-    level_complete_sound = pygame.mixer.Sound("mission failed.mp3")
-    level_complete_sound.play()
+    # Load mission failed sound
+    mission_failed_sound = pygame.mixer.Sound("mission failed.mp3")
+    mission_failed_sound.play()
 
-    # Display "Mission Success"
+    # Display "Mission Failed" message
     font = pygame.font.Font(None, 120)
     text = font.render("Mission failed...", True, (255, 0, 0))
     text_rect = text.get_rect(center=(screen.get_width() // 2, screen.get_height() // 2))
@@ -429,9 +436,9 @@ def mission_failed(screen):
     shadow_text = shadow_font.render("Mission failed...", True, (0, 0, 0))
     shadow_text_rect = shadow_text.get_rect(center=(screen.get_width() // 2 + 2, screen.get_height() // 2 + 2))
     
-    # Freeze the game and display text
+    # Freeze the game and display the fading text effect
     for alpha in range(255, -1, -5):
-        screen.fill((125, 125, 125))
+        screen.fill((125, 125, 125))  # Grey background
         shadow_text.set_alpha(alpha)
         text.set_alpha(alpha)
         screen.blit(shadow_text, shadow_text_rect)
@@ -439,8 +446,9 @@ def mission_failed(screen):
         pygame.display.flip()
         pygame.time.delay(50)
     
-    # Return to the main menu
-    main_menu(screen)
+    # Return to the main menu with proper arguments
+    return main_menu(screen, unlocked_levels, total_levels)
+
 
 
 def draw_wood_collection_bar(screen, collected_woods, total_woods):
@@ -467,6 +475,76 @@ def draw_wood_collection_bar(screen, collected_woods, total_woods):
     screen.blit(text, text_rect)
 
 
+def level_selection_menu(screen, unlocked_levels, total_levels):
+    running = True
+    font = pygame.font.Font(None, 36)  # Font for text
+    level_buttons = []  # Store button rects and level data
+
+    # Load images
+    unlocked_image = pygame.image.load("unlocked_level.png").convert_alpha()
+    unlocked_image = pygame.transform.scale(unlocked_image, (100, 100))  # Resize
+    locked_image = pygame.image.load("locked_level.png").convert_alpha()
+    locked_image = pygame.transform.scale(locked_image, (100, 100))  # Resize
+
+    # Button positions
+    rows, cols = 2, 5  # Grid layout of levels
+    margin_x, margin_y = 20, 50
+    button_width, button_height = unlocked_image.get_width(), unlocked_image.get_height()
+    start_x = (screen.get_width() - (cols * button_width + (cols - 1) * margin_x)) // 2
+    start_y = 150
+
+    # Create level buttons
+    for level in range(1, total_levels + 1):
+        row = (level - 1) // cols
+        col = (level - 1) % cols
+        x = start_x + col * (button_width + margin_x)
+        y = start_y + row * (button_height + margin_y)
+        rect = pygame.Rect(x, y, button_width, button_height)
+        level_buttons.append((rect, level))
+
+    # Back button
+    back_button_rect = pygame.Rect(screen.get_width() - 150, screen.get_height() - 70, 120, 50)
+
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                return None
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_pos = pygame.mouse.get_pos()
+                for rect, level in level_buttons:
+                    # Allow interaction only for unlocked levels
+                    if rect.collidepoint(mouse_pos) and level <= unlocked_levels:
+                        return level  # Return the selected level number
+                if back_button_rect.collidepoint(mouse_pos):
+                    return "back"  # Indicate the user wants to go back to the main menu
+
+        # Background and title
+        screen.fill((30, 30, 30))  # Background color
+        title_text = font.render("Select a Level", True, (255, 255, 255))
+        screen.blit(title_text, (screen.get_width() // 2 - title_text.get_width() // 2, 50))
+
+        # Draw level buttons
+        for rect, level in level_buttons:
+            if level == 1:
+                screen.blit(unlocked_image, rect.topleft)
+                level_text = font.render(f"Level {level}", True, (255, 255, 255))
+                screen.blit(level_text, (rect.x + 15, rect.y + 105))
+            else:
+                screen.blit(locked_image, rect.topleft)
+                lock_text = font.render("Locked", True, (100, 100, 100))
+                screen.blit(lock_text, (rect.x + 15, rect.y + 105))
+
+        # Draw Back button
+        pygame.draw.rect(screen, (200, 0, 0), back_button_rect, border_radius=10)  # Red button with rounded corners
+        back_text = font.render("Back", True, (255, 255, 255))
+        screen.blit(back_text, (back_button_rect.x + 20, back_button_rect.y + 10))
+
+        pygame.display.flip()
+
+    return None
+
+
 
 
 
@@ -475,207 +553,218 @@ def main():
     pygame.init()
     screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
     clock = pygame.time.Clock()
-    # Show the main menu
-    if not main_menu(screen):
-        return  # Exit the game if quit is selected
 
-    # Initialize volume controls
-    ambience_music_volume = 0.5  # Default volume for ambience and music
-    sfx_volume = 0.5  # Default volume for sound effects
+    # Show the main menu and handle level selection
+    while True:
+        selected_level = main_menu(screen, unlocked_levels=3, total_levels=10)  # Example numbers
+        if selected_level is None:  # Quit game if main menu returns None
+            return
+        
+        # Initialize volume controls
+        ambience_music_volume = 0.5  # Default volume for ambience and music
+        sfx_volume = 0.5  # Default volume for sound effects
 
-    # Load ambience and music sound
-    ambience = pygame.mixer.Sound("ambience.mp3")
-    ambience.play(-1)
-    ambience.set_volume(ambience_music_volume)
-    
-    global menu_sound_playing
-    
-    # Load the background images
-    background_image = pygame.image.load("BG1.jpg").convert()
-    settings_background_image = pygame.image.load("BG2.jpg").convert()
-    settings_background_image = pygame.transform.scale(settings_background_image, (1920, 1080))
+        # Load ambience and music sound
+        ambience = pygame.mixer.Sound("ambience.mp3")
+        ambience.play(-1)
+        ambience.set_volume(ambience_music_volume)
+        
+        global menu_sound_playing
+        
+        # Load the background images
+        background_image = pygame.image.load("BG1.jpg").convert()
+        settings_background_image = pygame.image.load("BG2.jpg").convert()
+        settings_background_image = pygame.transform.scale(settings_background_image, (1920, 1080))
 
-    # Define the world width for the extended game map
-    WORLD_WIDTH = 9000
-    difficulty = "medium"
+        # Define the world width for the extended game map
+        WORLD_WIDTH = 9000
+        difficulty = "medium"
 
-    # Create the test level
-    level_layout = [
-        '.........................................................',
-        '.........................................................',
-        '.........................................................',
-        '.........................................................',
-        '.........................................................',
-        '.........................................................',
-        '.........................................................',
-        '.........................................................',
-        '.........................................................',
-        '.........................................................',
-        '.........................................................',
-        '.........................................................',
-        '.......3....................11111111111..................',
-        '....111111111..........1...........22221111.........11111',
-        '.....................................22222222211111111122',
-        '..................111.................2222222222222222222',
-        '................................................222222222',
-        '.............3........1111111.........................222',
-        '..........11111111..........22.........................22',
-        '........1122222222...........22..........................',
-        '111111112222222222............22.........................',
-        '222222222222222222222222222222222222222222222222222222222'          
-    ] #each step up is +55 px
-    test_level = setup_level(level_layout)
-    current_level = "level1"
-    # Create a group for power-ups and add some power-ups
-    powerup_group = pygame.sprite.Group()
-    powerup_group.add(PowerUp(1700, screen.get_height() - 85, "health")) 
-    powerup_group.add(PowerUp(600, screen.get_height() - 220, "speed"))
-    powerup_group.add(PowerUp(300, screen.get_height() - 470, "speed"))
-    powerup_group.add(PowerUp(700, screen.get_height() - 600, "strength"))
-    powerup_group.add(PowerUp(2000, screen.get_height() - 130, "godmode"))
-    
+        # Create the test level
+        level_layout = [
+            '.........................................................',
+            '.........................................................',
+            '.........................................................',
+            '.........................................................',
+            '.........................................................',
+            '.........................................................',
+            '.........................................................',
+            '.........................................................',
+            '.........................................................',
+            '.........................................................',
+            '.........................................................',
+            '.........................................................',
+            '.......3....................11111111111..................',
+            '....111111111..........1...........22221111......3..11111',
+            '.....................................22222222211111111122',
+            '..................111.................2222222222222222222',
+            '................................................222222222',
+            '.............3........1111111.........................222',
+            '..........11111111..........22.........................22',
+            '........1122222222...........22..........................',
+            '111111112222222222........3...22.........3...............',
+            '222222222222222222222222222222222222222222222222222222222'          
+        ] #each step up is +55 px
+        test_level = setup_level(level_layout)
+        current_level = f"level{selected_level}"
+        # Create a group for power-ups and add some power-ups
+        powerup_group = pygame.sprite.Group()
+        powerup_group.add(PowerUp(1700, screen.get_height() - 85, "health")) 
+        powerup_group.add(PowerUp(600, screen.get_height() - 220, "speed"))
+        powerup_group.add(PowerUp(300, screen.get_height() - 470, "speed"))
+        powerup_group.add(PowerUp(700, screen.get_height() - 600, "strength"))
+        powerup_group.add(PowerUp(2000, screen.get_height() - 130, "godmode"))
+        
 
-    player = start_level(current_level, screen, difficulty, powerup_group)
-    character_sprites = pygame.sprite.Group()
-    character_sprites.add(player)
+        player = start_level(current_level, screen, difficulty, powerup_group)
+        character_sprites = pygame.sprite.Group()
+        character_sprites.add(player)
 
-    # Creating and adding enemies
-    enemies = pygame.sprite.Group()
-    enemy = Enemy(200, 890)
-    enemy2 = Enemy(1200, 930)
-    enemies.add(enemy)
-    enemies.add(enemy2)
+        # Creating and adding enemies
+        enemies = pygame.sprite.Group()
+        enemy = Enemy(200, 890)
+        enemy2 = Enemy(1200, 930)
+        enemies.add(enemy)
+        enemies.add(enemy2)
 
-    running = True
-    paused = False
-    in_settings = False
-    start_time = time.time()  # Initialize start time
-    paused_start_time = 0
-    total_paused_duration = 0
-    
-    resume_button_rect = pygame.Rect(0, 0, 1, 1)
-    settings_button_rect = pygame.Rect(0, 0, 1, 1)
-    quit_button_rect = pygame.Rect(0, 0, 1, 1)
-    back_button_rect = pygame.Rect(0, 0, 1, 1)  # Initialize back button rect for settings menu
-    ambience_music_slider_rect = pygame.Rect(0, 0, 1, 1)
-    sfx_slider_rect = pygame.Rect(0, 0, 1, 1)
-    hud = HUD(screen)
+        running = True
+        paused = False
+        in_settings = False
+        start_time = time.time()  # Initialize start time
+        paused_start_time = 0
+        total_paused_duration = 0
+        
+        resume_button_rect = pygame.Rect(0, 0, 1, 1)
+        settings_button_rect = pygame.Rect(0, 0, 1, 1)
+        quit_button_rect = pygame.Rect(0, 0, 1, 1)
+        back_button_rect = pygame.Rect(0, 0, 1, 1)  # Initialize back button rect for settings menu
+        ambience_music_slider_rect = pygame.Rect(0, 0, 1, 1)
+        sfx_slider_rect = pygame.Rect(0, 0, 1, 1)
+        hud = HUD(screen)
 
-    while running:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    if in_settings:
-                        in_settings = False
-                    else:
-                        paused = not paused
-                        if paused:
-                            paused_start_time = time.time()
+        while running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        if in_settings:
+                            in_settings = False
                         else:
+                            paused = not paused
+                            if paused:
+                                paused_start_time = time.time()
+                            else:
+                                total_paused_duration += time.time() - paused_start_time
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    mouse_pos = pygame.mouse.get_pos()
+                    if paused and not in_settings:
+                        if resume_button_rect.collidepoint(mouse_pos):
+                            paused = False
                             total_paused_duration += time.time() - paused_start_time
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                mouse_pos = pygame.mouse.get_pos()
-                if paused and not in_settings:
-                    if resume_button_rect.collidepoint(mouse_pos):
-                        paused = False
-                        total_paused_duration += time.time() - paused_start_time
-                    elif settings_button_rect.collidepoint(mouse_pos):
-                        in_settings = True
-                    elif quit_button_rect.collidepoint(mouse_pos):
-                        running = False
-                elif in_settings:
-                    if back_button_rect.collidepoint(mouse_pos):
-                        in_settings = False  # Close settings menu
-                    elif ambience_music_slider_rect.collidepoint(mouse_pos):
-                        ambience_music_volume = (mouse_pos[0] - ambience_music_slider_rect.x) / ambience_music_slider_rect.width
-                        ambience_music_volume = min(max(ambience_music_volume, 0), 1)
-                        ambience.set_volume(ambience_music_volume)  # Set ambience and music volume
-                    elif sfx_slider_rect.collidepoint(mouse_pos):
-                        sfx_volume = (mouse_pos[0] - sfx_slider_rect.x) / sfx_slider_rect.width
-                        sfx_volume = min(max(sfx_volume, 0), 1)
-                        # Set sound effects volume for all sound effects
-                        player_powerup_sound.set_volume(sfx_volume)
-                        player_shoot_sound.set_volume(sfx_volume)
-                        player_running.set_volume(sfx_volume)  
-                        Player_jump.set_volume(sfx_volume)
-                        damage.set_volume(sfx_volume)
-                        arrow_platform.set_volume(sfx_volume)
-                        enemy_move_sound.set_volume(sfx_volume)
-                        enemy_death_sound.set_volume(sfx_volume)
-                        enemy_take_damage_sound.set_volume(sfx_volume)
-                print(f"Mouse button {event.button} pressed at {event.pos}")
-
-        if not paused and not in_settings:
-            if menu_sound_playing:
-                menu_sound.stop()
-                menu_sound_playing = False
-
-            handle_input(player)
-            if player.dead:
-                mission_failed(screen)
-            
-            scroll_x = -player.rect.centerx + screen.get_width() // 2
-            scroll_x = max(-(WORLD_WIDTH - screen.get_width()), min(0, scroll_x))
-            
-            character_sprites.update(enemies, test_level.platforms, screen.get_width(), screen.get_height(), scroll_x, player_powerup_sound, arrow_platform)
-            
-            for enemy in enemies:
-                enemy.update(test_level.platforms, player, scroll_x)
-                enemy.draw(screen, scroll_x)
-            for powerup in powerup_group:
-                powerup.update(scroll_x)
-                powerup.draw(screen)
+                        elif settings_button_rect.collidepoint(mouse_pos):
+                            in_settings = True
+                        elif quit_button_rect.collidepoint(mouse_pos):
+                            running = False
+                    elif in_settings:
+                        if back_button_rect.collidepoint(mouse_pos):
+                            in_settings = False  # Close settings menu
+                        elif ambience_music_slider_rect.collidepoint(mouse_pos):
+                            ambience_music_volume = (mouse_pos[0] - ambience_music_slider_rect.x) / ambience_music_slider_rect.width
+                            ambience_music_volume = min(max(ambience_music_volume, 0), 1)
+                            ambience.set_volume(ambience_music_volume)  # Set ambience and music volume
+                        elif sfx_slider_rect.collidepoint(mouse_pos):
+                            sfx_volume = (mouse_pos[0] - sfx_slider_rect.x) / sfx_slider_rect.width
+                            sfx_volume = min(max(sfx_volume, 0), 1)
+                            # Set sound effects volume for all sound effects
+                            player_powerup_sound.set_volume(sfx_volume)
+                            player_shoot_sound.set_volume(sfx_volume)
+                            player_running.set_volume(sfx_volume)  
+                            Player_jump.set_volume(sfx_volume)
+                            damage.set_volume(sfx_volume)
+                            arrow_platform.set_volume(sfx_volume)
+                            enemy_move_sound.set_volume(sfx_volume)
+                            enemy_death_sound.set_volume(sfx_volume)
+                            enemy_take_damage_sound.set_volume(sfx_volume)
+                    print(f"Mouse button {event.button} pressed at {event.pos}")
                 
+            if not paused and not in_settings:
+                if menu_sound_playing:
+                    menu_sound.stop()
+                    menu_sound_playing = False
+
+                handle_input(player)
+                if player.dead:
+                    # Handle mission failure and return to the main menu
+                    selected_level = mission_failed(screen, unlocked_levels=3, total_levels=10)
+                    if selected_level is None:
+                        running = False
+                    else:
+                        current_level = f"level{selected_level}"
+                        break
+
+                
+                scroll_x = -player.rect.centerx + screen.get_width() // 2
+                scroll_x = max(-(WORLD_WIDTH - screen.get_width()), min(0, scroll_x))
+                
+                character_sprites.update(enemies, test_level.platforms, screen.get_width(), screen.get_height(), scroll_x, player_powerup_sound, arrow_platform)
+                
+                for enemy in enemies:
+                    enemy.update(test_level.platforms, player, scroll_x)
+                    enemy.draw(screen, scroll_x)
+                for powerup in powerup_group:
+                    powerup.update(scroll_x)
+                    powerup.draw(screen)
+                    
 
 
-            test_level.check_collisions(player)
-            test_level.update(scroll_x)
-            test_level.draw(screen, scroll_x)
+                test_level.check_collisions(player)
+                test_level.update(scroll_x)
+                test_level.draw(screen, scroll_x)
 
-            if pygame.sprite.spritecollideany(player, enemies):
-                player.take_damage(30, damage)
+                if pygame.sprite.spritecollideany(player, enemies):
+                    player.take_damage(30, damage)
 
-            player.check_powerup_collisions()
-            
-            screen.blit(background_image, (0, 0))
-            test_level.draw(screen, scroll_x)
-            character_sprites.draw(screen)
-            enemies.draw(screen)
-            powerup_group.draw(screen)
-            
-            for enemy in enemies:
-                enemy.draw_health_bar(screen, scroll_x)
+                player.check_powerup_collisions()
+                
+                screen.blit(background_image, (0, 0))
+                test_level.draw(screen, scroll_x)
+                character_sprites.draw(screen)
+                enemies.draw(screen)
+                powerup_group.draw(screen)
+                
+                for enemy in enemies:
+                    enemy.draw_health_bar(screen, scroll_x)
 
-            player.draw_trajectory()
-            player.arrows.draw(screen)
-            player.draw_health_bar(screen)
-            player.draw_health_text(screen)
-            
-            handle_collect_wood(player,test_level,screen)
-            collected_woods = 5 - len(test_level.wood_items)
-            handle_collect_wood(player, test_level, screen)
-            
-            # Draw HUD
-            draw_wood_collection_bar(screen, collected_woods, 5)
-            # Update active power-ups
+                player.draw_trajectory()
+                player.arrows.draw(screen)
+                player.draw_health_bar(screen)
+                player.draw_health_text(screen)
+                
+                handle_collect_wood(player,test_level,screen)
+                collected_woods = 5 - len(test_level.wood_items)
+                handle_collect_wood(player, test_level, screen)
+                
+                # Draw HUD
+                draw_wood_collection_bar(screen, collected_woods, 5)
+                # Update active power-ups
 
-            player.update_active_powerups()
+                player.update_active_powerups()
 
-            hud.draw(player)            
-            
-            pygame.display.flip()
-            clock.tick(120)
-            time_spent = time.time() - start_time - total_paused_duration
-            formatted_time = time.strftime("%M:%S", time.gmtime(time_spent))
-        elif paused and not in_settings:
-            resume_button_rect, settings_button_rect, quit_button_rect = render_pause_menu(screen, formatted_time)
-        elif in_settings:
-            paused = False
-            back_button_rect, ambience_music_slider_rect, sfx_slider_rect = render_settings_menu(screen, settings_background_image, ambience_music_volume, sfx_volume)
+                hud.draw(player)            
+                
+                pygame.display.flip()
+                clock.tick(120)
+                time_spent = time.time() - start_time - total_paused_duration
+                formatted_time = time.strftime("%M:%S", time.gmtime(time_spent))
+            elif paused and not in_settings:
+                resume_button_rect, settings_button_rect, quit_button_rect = render_pause_menu(screen, formatted_time)
+            elif in_settings:
+                paused = False
+                back_button_rect, ambience_music_slider_rect, sfx_slider_rect = render_settings_menu(screen, settings_background_image, ambience_music_volume, sfx_volume)
 
-    pygame.quit()
+        pygame.quit()
 
 if __name__ == "__main__":
     main()
+

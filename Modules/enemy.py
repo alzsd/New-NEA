@@ -53,8 +53,8 @@ class Enemy(pygame.sprite.Sprite):
             # Check if the player is within patrol range + buffer
             if abs(self.world_x - player.rect.x) <= self.patrol_range + 50:
                 self.pursue_player(player)
-            else:
-                self.patrol()
+            #else:
+                #self.patrol()
             
             # Update the world position based on velocity
             self.world_x += self.x_vel
