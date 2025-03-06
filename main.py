@@ -282,6 +282,9 @@ def draw_rounded_button(screen, rect, color, radius, shadow_offset=5):
 
 
 def main_menu(screen, unlocked_levels, total_levels):
+    pygame.init()
+    screen = pygame.display.set_mode((1920, 1080))  # Example size
+
     # Load the background image
     background_image = pygame.image.load("BG4.jpg").convert()
     background_image = pygame.transform.scale(background_image, (1920, 1080))
@@ -559,7 +562,6 @@ def main():
         selected_level = main_menu(screen, unlocked_levels=3, total_levels=10)  # Example numbers
         if selected_level is None:  # Quit game if main menu returns None
             return
-        
         # Initialize volume controls
         ambience_music_volume = 0.5  # Default volume for ambience and music
         sfx_volume = 0.5  # Default volume for sound effects
