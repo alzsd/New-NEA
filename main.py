@@ -289,7 +289,7 @@ def main_menu(screen, unlocked_levels, total_levels):
     background_image = pygame.image.load("BG4.jpg").convert()
     background_image = pygame.transform.scale(background_image, (1920, 1080))
     
-    # Define button properties
+    # Define button properties for Play and Quit
     button_width = 200
     button_height = 50
     button_color = (75, 75, 75)  # Greyish black
@@ -298,13 +298,44 @@ def main_menu(screen, unlocked_levels, total_levels):
     
     # Calculate button positions
     screen_width, screen_height = screen.get_size()
-    play_button_rect = pygame.Rect((screen_width - button_width) // 2, screen_height // 2 - button_height - 10, button_width, button_height)
-    quit_button_rect = pygame.Rect((screen_width - button_width) // 2, screen_height // 2 + 10, button_width, button_height)
+    play_button_rect = pygame.Rect((screen_width - button_width) // 2, 
+                                   screen_height // 2 - button_height - 10, 
+                                   button_width, button_height)
+    quit_button_rect = pygame.Rect((screen_width - button_width) // 2, 
+                                   screen_height // 2 + 10, 
+                                   button_width, button_height)
     
-    # Initialize fonts
+    # Initialize fonts for buttons and titles
     font = pygame.font.Font(None, 36)
+    title_font = pygame.font.Font(None, 72)
+    subtitle_font = pygame.font.Font(None, 36)
     
-    # Render the main menu
+    # Set up title texts
+    main_title = "Breath of the Wild"
+    subtitle = "Platformer Edition"
+    
+    # Position the title toward the top: using 25% of screen height from the top
+    title_y = int(screen_height * 0.25)
+    
+    # Render the title texts and their shadows
+    title_text = title_font.render(main_title, True, (100, 100, 150))
+    subtitle_text = subtitle_font.render(subtitle, True, (200, 200, 200))
+    
+    # Compute rects and center them horizontally
+    title_rect = title_text.get_rect(center=(screen_width // 2, title_y))
+    subtitle_rect = subtitle_text.get_rect(center=(screen_width // 2, title_y + title_text.get_height() + 5))
+    
+    # Create shadow versions (with a small offset)
+    shadow_offset = 2
+    title_shadow = title_font.render(main_title, True, (0, 0, 0))
+    subtitle_shadow = subtitle_font.render(subtitle, True, (0, 0, 0))
+    title_shadow_rect = title_rect.copy()
+    title_shadow_rect.x += shadow_offset
+    title_shadow_rect.y += shadow_offset
+    subtitle_shadow_rect = subtitle_rect.copy()
+    subtitle_shadow_rect.x += shadow_offset
+    subtitle_shadow_rect.y += shadow_offset
+
     running = True
     while running:
         for event in pygame.event.get():
@@ -328,6 +359,12 @@ def main_menu(screen, unlocked_levels, total_levels):
         # Draw the background image
         screen.blit(background_image, (0, 0))
         
+        # Draw the shadowed title
+        screen.blit(title_shadow, title_shadow_rect)
+        screen.blit(subtitle_shadow, subtitle_shadow_rect)
+        screen.blit(title_text, title_rect)
+        screen.blit(subtitle_text, subtitle_rect)
+        
         # Draw the buttons with rounded corners and shadow
         draw_rounded_button(screen, play_button_rect, button_color, radius)
         draw_rounded_button(screen, quit_button_rect, button_color, radius)
@@ -341,6 +378,8 @@ def main_menu(screen, unlocked_levels, total_levels):
         pygame.display.flip()
 
     return None
+
+
 
 
 
@@ -599,7 +638,7 @@ def main():
             '.......3....................11111111111..................',
             '....111111111..........1...........22221111......3..11111',
             '.....................................22222222211111111122',
-            '..................111.................2222222222222222222',
+            '.................1111.................2222222222222222222',
             '................................................222222222',
             '.............3........1111111.........................222',
             '..........11111111..........22.........................22',
